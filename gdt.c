@@ -2,6 +2,10 @@
 
 static unsigned long long gdt[GDT_ENTRIES];
 
+/* build_gdt_segment builds a single segment of the global descriptor table
+ * and returns it as a 64 bit integer. it just basically shifts everything
+ * into the correct place.
+ */
 static unsigned long long build_gdt_segment(unsigned int base, unsigned int limit, 
                                      unsigned int flags)
 {
@@ -18,16 +22,30 @@ static unsigned long long build_gdt_segment(unsigned int base, unsigned int limi
 	return val;
 }
 
+/*
+ * setup_gdt creates 5 segments at the moment:
+ * - null descriptor: the first entry is never accessed by the processor,
+ *   so we just leave it blank
+ * - kernel code: this is the segment where our kernel code will live. it is
+ *   executable and in ring 0 (kernel mode).
+ * - kernel data: same as kernel code, but non executable and writable.
+ * - user code: same as kernel code, but in ring 3 (user mode).
+ * - user data: same as kernel data, but in ring 3 (user mode).
+ */
 void setup_gdt()
 {
     gdt[0] = 0;
-    gdt[1] = build_gdt_segment(0, 0x100000-1, (1<<15)|(1<<14)|(1<<7)|(1<<4)|(1<<3)); /* kernel code */
-    gdt[2] = build_gdt_segment(0, 0x100000-1, (1<<15)|(1<<14)|(1<<7)|(1<<4)|(1<<1)); /* kernel data*/
-    gdt[3] = build_gdt_segment(0, 0x100000-1, (1<<15)|(1<<14)|(1<<7)|(1<<6)|(1<<5)|(1<<4)|(1<<3)); /* user code */
-    gdt[4] = build_gdt_segment(0, 0x100000-1, (1<<15)|(1<<14)|(1<<7)|(1<<6)|(1<<5)|(1<<1)); /* user data */
-//    gdt[5] = build_gdt_segment(0, 0x100000-1, (1<<15)|(1<<14)|(1<<7)|(1<<6)|(1<<5)|(1<<1)); /* tss for multitasking */
+    gdt[1] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_KERNEL_CODE); /* kernel code */
+    gdt[2] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_KERNEL_DATA); /* kernel data*/
+    gdt[3] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_USER_CODE); /* user code */
+    gdt[4] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_USER_DATA); /* user data */
 }
 
+/*
+ * after the gdt is created, it needs to be loaded via the lgdt
+ * instruction. the processor expects a pointer to the location
+ * where the gdt lies.
+ */
 void load_gdt()
 {
 	struct {
@@ -40,6 +58,10 @@ void load_gdt()
 	asm volatile("lgdt %0" : : "m" (gdtp));
 }
 
+/*
+ * after the gdt is loaded by the processor, it still isn't used.
+ * in order for it to get used, we need to reload all segment registers.
+ */
 void reload_segment_registers()
 {
 	asm volatile("mov $0x10, %ax\n\t"
