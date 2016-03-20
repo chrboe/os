@@ -1,7 +1,7 @@
 #ifndef GDT_H
 #define GDT_H
 
-#include <stdint.h>
+#include <stdint.h> /* for uintX_t */
 
 #define GDT_ENTRIES 5
 
