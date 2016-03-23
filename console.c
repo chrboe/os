@@ -1,27 +1,5 @@
 #include "console.h"
 
-/*
-static int is_valid_identifier(char c)
-{
-    return c == 'd' || c == 'x' || c == 's';
-}
-*/
-
-/*
-static int count_identifiers(const char* format)
-{
-    int count = 0;
-    for(char* p = (char*)format; *p; p++) {
-        if(*p == '%') {
-            if(is_valid_identifier(*(p+1))) {
-                count++;
-            }
-        }
-    }
-    return count;
-}
-*/
-
 void kputc(char color, char chr)
 {
     char* vmem = (char*)0xb8000;
@@ -29,12 +7,19 @@ void kputc(char color, char chr)
     static int xoffs = 0;
 
     if(chr == '\n') {
-        ypos++;
+		if(ypos >= 24) {
+			char* secondline = vmem + 160;
+			kmemmove(vmem, secondline, 4096 - 160);
+			kmemset(vmem + 160*24, 0, 160);
+		} else {
+        	ypos++;
+		}
     } else if(chr == '\r') {
         xoffs = 0;
     } else {
-        vmem[(ypos*80 + xoffs)*2] = chr;
-        vmem[(ypos*80 + xoffs)*2+1] = color;
+		int curroffs = (ypos*80 + xoffs)*2;
+        vmem[curroffs] = chr;
+        vmem[curroffs+1] = color;
         xoffs++;
     }
 }
@@ -71,9 +56,7 @@ void kputi(char color, unsigned long num, int base)
 void kcls()
 {
     char* vmem = (char*)0xb8000;
-    for(int i = 0; i < 4096; i++) {
-        vmem[i] = '\0';
-    }
+	kmemset(vmem, 0, 4096);
 }
 
 void kprintf(char color, const char* format, ...)

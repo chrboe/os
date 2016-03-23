@@ -3,6 +3,7 @@
 #include "console.h" /* for kprintf, kcls */
 #include "gdt.h" /* for setup_gdt, load_gdt, reload_segment_registers */
 #include "idt.h" /* for setup_idt */
+#include "keyboard.h" /* for init_keyboard */
 
 void init()
 {
@@ -27,5 +28,13 @@ void init()
 	load_idt();
 	kprintf(COL_SUC, "OK\r\n");
 
-	int i = 100 / 0;
+	kprintf(COL_NOR, "Initializing Keyboard... ");
+	if(init_keyboard()) {
+		kprintf(COL_SUC, "OK\r\n");
+	} else {
+		kprintf(COL_CRI, "ERR\r\n");
+	}
+
+	asm volatile("int $48");
+	while(1);
 }

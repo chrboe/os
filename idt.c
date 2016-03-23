@@ -13,16 +13,48 @@ static uint64_t build_idt_entry(void (*f)(), uint32_t sel, uint32_t flags)
 	return entry;
 }
 
-void test()
-{
-	static int i = 0;
-	kprintf(COL_NOR, "test %d\r\n", i++);
-}
-
 void setup_idt()
 {
-	for(int i = 0; i < IDT_ENTRIES; i++)
-		idt[i] = build_idt_entry(test, 8, 0x80 | 0x00 | 0xe);
+	pic_remap_irqs(32);
+	pic_apply_irq_mask(0);
+	idt[0] = build_idt_entry(interrupt_stub_0, 8, 0x80 | 0x00 | 0xe);
+	idt[1] = build_idt_entry(interrupt_stub_1, 8, 0x80 | 0x00 | 0xe);
+	idt[2] = build_idt_entry(interrupt_stub_2, 8, 0x80 | 0x00 | 0xe);
+	idt[3] = build_idt_entry(interrupt_stub_3, 8, 0x80 | 0x00 | 0xe);
+	idt[4] = build_idt_entry(interrupt_stub_4, 8, 0x80 | 0x00 | 0xe);
+	idt[5] = build_idt_entry(interrupt_stub_5, 8, 0x80 | 0x00 | 0xe);
+	idt[6] = build_idt_entry(interrupt_stub_6, 8, 0x80 | 0x00 | 0xe);
+	idt[7] = build_idt_entry(interrupt_stub_7, 8, 0x80 | 0x00 | 0xe);
+	idt[8] = build_idt_entry(interrupt_stub_8, 8, 0x80 | 0x00 | 0xe);
+	idt[9] = build_idt_entry(interrupt_stub_9, 8, 0x80 | 0x00 | 0xe);
+	idt[10] = build_idt_entry(interrupt_stub_10, 8, 0x80 | 0x00 | 0xe);
+	idt[11] = build_idt_entry(interrupt_stub_11, 8, 0x80 | 0x00 | 0xe);
+	idt[12] = build_idt_entry(interrupt_stub_12, 8, 0x80 | 0x00 | 0xe);
+	idt[13] = build_idt_entry(interrupt_stub_13, 8, 0x80 | 0x00 | 0xe);
+	idt[14] = build_idt_entry(interrupt_stub_14, 8, 0x80 | 0x00 | 0xe);
+	idt[15] = build_idt_entry(interrupt_stub_15, 8, 0x80 | 0x00 | 0xe);
+	idt[16] = build_idt_entry(interrupt_stub_16, 8, 0x80 | 0x00 | 0xe);
+	idt[17] = build_idt_entry(interrupt_stub_17, 8, 0x80 | 0x00 | 0xe);
+	idt[18] = build_idt_entry(interrupt_stub_18, 8, 0x80 | 0x00 | 0xe);
+
+	idt[32] = build_idt_entry(interrupt_stub_32, 8, 0x80 | 0x00 | 0xe);
+	idt[33] = build_idt_entry(interrupt_stub_33, 8, 0x80 | 0x00 | 0xe);
+	idt[34] = build_idt_entry(interrupt_stub_34, 8, 0x80 | 0x00 | 0xe);
+	idt[35] = build_idt_entry(interrupt_stub_35, 8, 0x80 | 0x00 | 0xe);
+	idt[36] = build_idt_entry(interrupt_stub_36, 8, 0x80 | 0x00 | 0xe);
+	idt[37] = build_idt_entry(interrupt_stub_37, 8, 0x80 | 0x00 | 0xe);
+	idt[38] = build_idt_entry(interrupt_stub_38, 8, 0x80 | 0x00 | 0xe);
+	idt[39] = build_idt_entry(interrupt_stub_39, 8, 0x80 | 0x00 | 0xe);
+	idt[30] = build_idt_entry(interrupt_stub_40, 8, 0x80 | 0x00 | 0xe);
+	idt[41] = build_idt_entry(interrupt_stub_41, 8, 0x80 | 0x00 | 0xe);
+	idt[42] = build_idt_entry(interrupt_stub_42, 8, 0x80 | 0x00 | 0xe);
+	idt[43] = build_idt_entry(interrupt_stub_43, 8, 0x80 | 0x00 | 0xe);
+	idt[44] = build_idt_entry(interrupt_stub_44, 8, 0x80 | 0x00 | 0xe);
+	idt[45] = build_idt_entry(interrupt_stub_45, 8, 0x80 | 0x00 | 0xe);
+	idt[46] = build_idt_entry(interrupt_stub_46, 8, 0x80 | 0x00 | 0xe);
+	idt[47] = build_idt_entry(interrupt_stub_47, 8, 0x80 | 0x00 | 0xe);
+
+	idt[48] = build_idt_entry(interrupt_stub_48, 8, 0x80 | 0x60 | 0xe);
 }
 
 void load_idt()
@@ -36,4 +68,118 @@ void load_idt()
 	};
 
 	asm volatile("lidt %0" : : "m" (idtp));
+	asm volatile("sti");
+}
+
+void pic_remap_irqs(int intnum)
+{
+	/*
+	 * send ICW1:
+	 * 0x01 = we will send ICW4 later
+	 * 0x10 = actual initialization command
+	 */
+	outb(PIC_MASTER_COMMAND, 0x10 | 0x01);
+	outb(PIC_SLAVE_COMMAND, 0x10 | 0x01);
+
+	/*
+	 * now we actually remap the IRQs (this is ICW2)
+	 */
+	outb(PIC_MASTER_DATA, intnum);
+	outb(PIC_SLAVE_DATA, intnum+8);
+
+	/*
+	 * ICW3: since there are two PICs, they need
+	 * to communicate. this ICW tells them what
+	 * IRQ to use for communication.
+	 * in this case IRQ2 is used.
+	 */
+	outb(PIC_MASTER_DATA, 0x04);
+	outb(PIC_SLAVE_DATA, 2);
+
+	/*
+	 * ICW4: this tells the PIC that we are in
+	 * 8086 mode (which basically means we're a PC).
+	 */
+	outb(PIC_MASTER_DATA, 0x01);
+	outb(PIC_SLAVE_DATA, 0x01);
+}
+
+/*
+ * pic_apply_irq_mask enables the ability to mask
+ * and demask IRQs. if a bit in "mask" is set,
+ * the IRQ is masked (disabled). if the bit is
+ * unset, the interrupt is active.
+ */
+void pic_apply_irq_mask(uint16_t mask)
+{
+	outb(PIC_MASTER_IMR, (uint8_t)mask);
+	outb(PIC_SLAVE_IMR, (uint8_t)(mask>>8));
+}
+
+/*
+ * pic_send_eoi sends an EOI (end of interrupt) to
+ * one or both PICs. this is needed so the PICs
+ * disable the IRQs after the ISR is done.
+ */
+void pic_send_eoi(uint8_t irq)
+{
+	outb(PIC_MASTER_COMMAND, EOI);
+
+	/*
+	 * only send the EOI to the slave controller
+	 * if it is affected by it (i.e. if the IRQ
+	 * is above 7)
+	 */
+	if(irq > 7) {
+		outb(PIC_SLAVE_COMMAND, EOI);
+	}
+}
+
+unsigned int isr_handler_common(unsigned int esp)
+{
+	struct stackframe* frame = (struct stackframe*)esp;
+
+	//kprintf(COL_NOR, "interrupt %d\r\n", frame->interrupt);
+
+	if(frame->interrupt <= 0x1f) {
+		kprintf(COL_ERR, "The following exception just occoured: ");
+		switch(frame->interrupt) {
+			case 0:
+				kprintf(COL_CRI, "Division by Zero\r\n");
+				break;
+			default:
+				kprintf(COL_CRI, "(Unknown)\r\n");
+				break;
+		}
+		kprintf(COL_ERR, "Aborting Kernel.");
+		while(1) {
+			asm volatile("cli; hlt");
+		}
+	} else if(frame->interrupt >= 0x20 && frame->interrupt <= 0x2f) {
+		switch(frame->interrupt) {
+			case 32:
+				break;
+			case 33:;
+				/* keyboard */
+				kprintf(COL_NOR, "KEYBOARD: ");
+				uint8_t scancode = inb(0x60);
+				if(scancode & (1<<7)) {
+					kprintf(COL_NOR, "released ");
+				} else {
+					kprintf(COL_NOR, "pressed ");
+				}
+				kprintf(COL_NOR, "%c (%d)\r\n", scancode_to_ascii(scancode & ~(1<<7)), scancode & ~(1<<7));
+				break;
+		}
+		pic_send_eoi(frame->interrupt);
+	} else if(frame->interrupt == 0x30) {
+		kprintf(COL_SUC, "System Call. Hello World!\r\n");
+	} else {
+		kprintf(COL_CRI, "Unknown Interrupt (%d) occoured. Kernel aborted.", frame->interrupt);
+		while(1) {
+			asm volatile("cli; hlt");
+		}
+
+	}
+	return esp;
 }
