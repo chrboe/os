@@ -30,6 +30,8 @@
 #define SEG_CODE_EXRDC     0x0E /* execute/read, conforming */
 #define SEG_CODE_EXRDCA    0x0F /* execute/read, conforming, accessed */
 
+#define SEG_TSS            0x09
+
 /* flags for the kernel code segment:
  * - present
  * - ring 0
@@ -72,6 +74,9 @@
 #define GDT_FLAGS_USER_DATA	SEG_DESCTYPE(1) | SEG_PRES(1) | SEG_SAVL(0) | \
 				SEG_LONG(0)     | SEG_SIZE(1) | SEG_GRAN(1) | \
 				SEG_RING(3)     | SEG_DATA_RDWR
+
+#define GDT_FLAGS_TSS SEG_TSS | SEG_PRES(1) | SEG_RING(3)
+
 
 void setup_gdt();
 void load_gdt();

@@ -1,6 +1,7 @@
 #include "gdt.h"
 
-static unsigned long long gdt[GDT_ENTRIES];
+static uint64_t gdt[GDT_ENTRIES];
+uint32_t tss[32] = {0, 0, 0x10};
 
 /* build_gdt_segment builds a single segment of the global descriptor table
  * and returns it as a 64 bit integer. it just basically shifts everything
@@ -39,6 +40,7 @@ void setup_gdt()
     gdt[2] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_KERNEL_DATA); /* kernel data*/
     gdt[3] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_USER_CODE); /* user code */
     gdt[4] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_USER_DATA); /* user data */
+    gdt[5] = build_gdt_segment((uint32_t)tss, sizeof(tss), GDT_FLAGS_TSS);
 }
 
 /*
