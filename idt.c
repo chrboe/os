@@ -140,12 +140,16 @@ static void handle_exception(struct stackframe* frame)
     kprintf(COL_ERR, "The following exception just occoured: ");
 	switch(frame->interrupt) {
 		case 0:
-			kprintf(COL_CRI, "Division by Zero\r\n");
+			kprintf(COL_CRI, "Division by Zero");
+			break;
+		case 13:
+			kprintf(COL_CRI, "General Protection Fault");
 			break;
 		default:
-			kprintf(COL_CRI, "(Unknown)\r\n");
+			kprintf(COL_CRI, "(Unknown)");
 			break;
 	}
+	kprintf(COL_CRI, " (%d)\r\n", frame->interrupt);
 	
     kprintf(COL_ERR, "Aborting Kernel.");
 	while(1) {
@@ -159,6 +163,7 @@ static struct stackframe* handle_irq(struct stackframe* frame)
     switch(frame->interrupt) {
         case 32:
             new_frame = schedule(frame);
+			tss[1] = (uint32_t)(new_frame + 1);
             break;
 		
         case 33:;

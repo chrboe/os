@@ -74,5 +74,7 @@ void reload_segment_registers()
 		"mov %ax, %ss\n\t"
 		"ljmp $0x8, $.1\n\t"
 		".1:");
+
+	asm volatile("ltr %%ax" : : "a" (5 << 3));
 }
 

@@ -82,6 +82,10 @@ isr_common:
 	call isr_handler_common
 	mov %eax, %esp
 
+	mov $0x23, %ax
+	mov %ax, %ds
+	mov %ax, %es
+
 	/*
 	 * in the end, retrieve the general
 	 * purpose registers that we saved

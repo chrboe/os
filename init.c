@@ -1,12 +1,6 @@
 #include "init.h"
 
-#include "console.h" /* for kprintf, kcls */
-#include "gdt.h" /* for setup_gdt, load_gdt, reload_segment_registers */
-#include "idt.h" /* for setup_idt */
-#include "keyboard.h" /* for init_keyboard */
-#include "task.h"
-
-void init()
+void init(struct multiboot_structure* mb_struc)
 {
 	kcls();
 	kprintf(COL_NOR, "Building GDT... ");
@@ -36,9 +30,15 @@ void init()
 		kprintf(COL_CRI, "ERR\r\n");
 	}
 
-    kprintf(COL_NOR, "Initializing Multitasking...");
+	kprintf(COL_NOR, "Initializing Physical Memory Manger... ");
+	pmm_init(mb_struc);
+	kprintf(COL_SUC, "OK\r\n");
+
+    
+	kprintf(COL_NOR, "Initializing Multitasking...");
     init_multitasking();
     kprintf(COL_SUC, "OK\r\n");
+
 
 	asm volatile("int $48");
 	while(1);

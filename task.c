@@ -1,7 +1,7 @@
 #include "task.h"
 
-static char stack_a[4096];
-static char stack_b[4096];
+static struct task* first_task = 0;
+static struct task* current_task = 0;
 
 void task_a()
 {
@@ -17,41 +17,54 @@ void task_b()
     }
 }
 
-struct stackframe* init_task(char* stack, void* func)
+struct task* init_task(void* func)
 {
+	struct task* task = pmm_alloc();
+	char* stack = pmm_alloc();
+	char* ustack  = pmm_alloc();
+
     struct stackframe new_state;
     new_state.eax = 0;
     new_state.ebx = 0;
     new_state.ecx = 0;
     new_state.edx = 0;
+	new_state.esp = (uint32_t)(ustack + 4096);
     new_state.eip = (uint32_t)func;
-    new_state.cs = 0x08;
+    new_state.cs = 0x18 | 0x03;
+	new_state.ss = 0x20 | 0x03;
     new_state.eflags = 0x202;
 
     struct stackframe* current_state = (void*)(stack + 4096 - sizeof(new_state));
     *current_state = new_state;
 
-    kprintf(COL_NOR, "setting new cpu to eip=%d\r\n", new_state.eip);
-    return current_state;
+	task->frame = current_state;
+	task->next = first_task;
+	first_task = task;
+
+	return task;
 }
 
-static int current_task = -1;
-static int num_tasks = 2;
-static struct stackframe* tasks[2];
 void init_multitasking()
 {
-    tasks[0] = init_task(stack_a, task_a);
-    tasks[1] = init_task(stack_b, task_b);
+	init_task(task_a);
+	init_task(task_b);
 }
 
 struct stackframe* schedule(struct stackframe* frame)
 {
-    if(current_task >= 0) {
-        tasks[current_task] = frame;
+	if(first_task == 0) {
+		return frame;
+	}
+
+    if(current_task == 0) {
+		current_task = first_task;
     }
 
-    current_task++;
-    current_task %= num_tasks;
+	if(current_task->next == 0) {
+		current_task = first_task;
+	} else {
+		current_task = current_task->next;
+	}
 
-    return frame = tasks[current_task];
+    return current_task->frame;
 }

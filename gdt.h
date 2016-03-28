@@ -3,7 +3,7 @@
 
 #include <stdint.h> /* for uintX_t */
 
-#define GDT_ENTRIES 5
+#define GDT_ENTRIES 6
 
 #define SEG_DESCTYPE(x)  ((x) << 0x04) /* descriptor type (0 for system, 1 for code/data) */
 #define SEG_PRES(x)      ((x) << 0x07) /* present */
@@ -77,6 +77,7 @@
 
 #define GDT_FLAGS_TSS SEG_TSS | SEG_PRES(1) | SEG_RING(3)
 
+uint32_t tss[32];
 
 void setup_gdt();
 void load_gdt();

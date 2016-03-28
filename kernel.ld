@@ -15,6 +15,8 @@ SECTIONS
      */
     . = 0x100000;
 
+	kernel_start = .;
+
     /*
      * this ensures that the multiboot header is first in the binary.
      */
@@ -38,4 +40,7 @@ SECTIONS
     .bss ALIGN(4096) : {
         *(.bss)
     }
+
+	. = ALIGN(4096);
+	kernel_end = .;
 }

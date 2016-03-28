@@ -48,8 +48,9 @@ _start:
 	mov $kernel_stack, %esp
 
 	/*
-	 * then, we call our init() method, which is defined in init.c.
+	 * then, we call our init function, which is defined in init.c.
 	 */
+	push %ebx
 	call init
 
 	/*

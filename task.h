@@ -3,6 +3,12 @@
 
 #include "console.h"
 #include "idt.h"
+#include "pmm.h"
+
+struct task {
+	struct stackframe* frame;
+	struct task* next;
+};
 
 struct stackframe* schedule(struct stackframe* frame);
 void init_multitasking();
