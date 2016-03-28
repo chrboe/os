@@ -4,6 +4,7 @@
 #include "gdt.h" /* for setup_gdt, load_gdt, reload_segment_registers */
 #include "idt.h" /* for setup_idt */
 #include "keyboard.h" /* for init_keyboard */
+#include "task.h"
 
 void init()
 {
@@ -34,6 +35,10 @@ void init()
 	} else {
 		kprintf(COL_CRI, "ERR\r\n");
 	}
+
+    kprintf(COL_NOR, "Initializing Multitasking...");
+    init_multitasking();
+    kprintf(COL_SUC, "OK\r\n");
 
 	asm volatile("int $48");
 	while(1);

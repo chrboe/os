@@ -5,6 +5,7 @@
 
 #include "keyboard.h"
 #include "console.h" /* for kprintf */
+#include "task.h"
 
 #define IDT_ENTRIES 256
 

@@ -135,45 +135,64 @@ void pic_send_eoi(uint8_t irq)
 	}
 }
 
-unsigned int isr_handler_common(unsigned int esp)
+static void handle_exception(struct stackframe* frame)
 {
-	struct stackframe* frame = (struct stackframe*)esp;
+    kprintf(COL_ERR, "The following exception just occoured: ");
+	switch(frame->interrupt) {
+		case 0:
+			kprintf(COL_CRI, "Division by Zero\r\n");
+			break;
+		default:
+			kprintf(COL_CRI, "(Unknown)\r\n");
+			break;
+	}
+	
+    kprintf(COL_ERR, "Aborting Kernel.");
+	while(1) {
+		asm volatile("cli; hlt");
+	}
+}
 
-	//kprintf(COL_NOR, "interrupt %d\r\n", frame->interrupt);
+static struct stackframe* handle_irq(struct stackframe* frame)
+{
+    struct stackframe* new_frame = frame;
+    switch(frame->interrupt) {
+        case 32:
+            new_frame = schedule(frame);
+            break;
+		
+        case 33:;
+			/* keyboard */
+//			kprintf(COL_NOR, "KEYBOARD: ");
+			uint8_t scancode = inb(0x60);
+			if(scancode & (1<<7)) {
+//				kprintf(COL_NOR, "released ");
+			} else {
+//				kprintf(COL_NOR, "pressed ");
+                kprintf(COL_NOR, "%c", scancode_to_ascii(scancode & ~(1<<7)));
+			}
+//			kprintf(COL_NOR, "%c (%d)\r\n", scancode_to_ascii(scancode & ~(1<<7)), scancode & ~(1<<7));
+			break;
+	}
+	pic_send_eoi(frame->interrupt);
+    return new_frame;
+}
 
+static void handle_syscall(struct stackframe* frame)
+{
+    uint32_t scallnum = frame->eax;
+    kprintf(COL_SUC, "System Call #%d. Hello World!\r\n", scallnum);
+}
+
+struct stackframe* isr_handler_common(struct stackframe* frame)
+{
+    struct stackframe* new_frame = frame;
 	if(frame->interrupt <= 0x1f) {
-		kprintf(COL_ERR, "The following exception just occoured: ");
-		switch(frame->interrupt) {
-			case 0:
-				kprintf(COL_CRI, "Division by Zero\r\n");
-				break;
-			default:
-				kprintf(COL_CRI, "(Unknown)\r\n");
-				break;
-		}
-		kprintf(COL_ERR, "Aborting Kernel.");
-		while(1) {
-			asm volatile("cli; hlt");
-		}
+        handle_exception(frame); 
 	} else if(frame->interrupt >= 0x20 && frame->interrupt <= 0x2f) {
-		switch(frame->interrupt) {
-			case 32:
-				break;
-			case 33:;
-				/* keyboard */
-				kprintf(COL_NOR, "KEYBOARD: ");
-				uint8_t scancode = inb(0x60);
-				if(scancode & (1<<7)) {
-					kprintf(COL_NOR, "released ");
-				} else {
-					kprintf(COL_NOR, "pressed ");
-				}
-				kprintf(COL_NOR, "%c (%d)\r\n", scancode_to_ascii(scancode & ~(1<<7)), scancode & ~(1<<7));
-				break;
-		}
-		pic_send_eoi(frame->interrupt);
+        new_frame = handle_irq(frame);
 	} else if(frame->interrupt == 0x30) {
-		kprintf(COL_SUC, "System Call. Hello World!\r\n");
+        handle_syscall(frame);
 	} else {
 		kprintf(COL_CRI, "Unknown Interrupt (%d) occoured. Kernel aborted.", frame->interrupt);
 		while(1) {
@@ -181,5 +200,5 @@ unsigned int isr_handler_common(unsigned int esp)
 		}
 
 	}
-	return esp;
+	return new_frame;
 }
