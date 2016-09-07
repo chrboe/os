@@ -7,17 +7,17 @@ void kputc(char color, char chr)
     static int xoffs = 0;
 
     if(chr == '\n') {
-		if(ypos >= 24) {
-			char* secondline = vmem + 160;
-			kmemmove(vmem, secondline, 4096 - 160);
-			kmemset(vmem + 160*24, 0, 160);
-		} else {
-        	ypos++;
-		}
+        if(ypos >= 24) {
+            char* secondline = vmem + 160;
+            kmemmove(vmem, secondline, 4096 - 160);
+            kmemset(vmem + 160*24, 0, 160);
+        } else {
+            ypos++;
+        }
     } else if(chr == '\r') {
         xoffs = 0;
     } else {
-		int curroffs = (ypos*80 + xoffs)*2;
+        int curroffs = (ypos*80 + xoffs)*2;
         vmem[curroffs] = chr;
         vmem[curroffs+1] = color;
         xoffs++;
@@ -56,14 +56,14 @@ void kputi(char color, unsigned long num, int base)
 void kcls()
 {
     char* vmem = (char*)0xb8000;
-	kmemset(vmem, 0, 4096);
+    kmemset(vmem, 0, 4096);
 }
 
 void kprintf(char color, const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    
+
     for(char* p = (char*)format; *p; p++) {
         if(*p == '%') {
             switch(*++p) {

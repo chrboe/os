@@ -8,19 +8,19 @@ uint32_t tss[32] = {0, 0, 0x10};
  * into the correct place.
  */
 static unsigned long long build_gdt_segment(unsigned int base, unsigned int limit, 
-                                     unsigned int flags)
+        unsigned int flags)
 {
-	unsigned long long val;
-	val  = limit        & 0x000F0000;
-	val |= (flags << 8) & 0x00F0FF00;
-	val |= (base >> 16) & 0x000000FF;
-	val |= base         & 0xFF000000;
+    unsigned long long val;
+    val  = limit        & 0x000F0000;
+    val |= (flags << 8) & 0x00F0FF00;
+    val |= (base >> 16) & 0x000000FF;
+    val |= base         & 0xFF000000;
 
-	val <<=32;
+    val <<=32;
 
-	val |= base << 16;
-	val |= limit & 0x0000FFFF;
-	return val;
+    val |= base << 16;
+    val |= limit & 0x0000FFFF;
+    return val;
 }
 
 /*
@@ -50,14 +50,14 @@ void setup_gdt()
  */
 void load_gdt()
 {
-	struct {
-		uint16_t limit;
-		void* pointer;
-	} __attribute__((packed)) gdtp = {
-		.limit = GDT_ENTRIES * 8 - 1,
-		.pointer = gdt,
-	};
-	asm volatile("lgdt %0" : : "m" (gdtp));
+    struct {
+        uint16_t limit;
+        void* pointer;
+    } __attribute__((packed)) gdtp = {
+        .limit = GDT_ENTRIES * 8 - 1,
+        .pointer = gdt,
+    };
+    asm volatile("lgdt %0" : : "m" (gdtp));
 }
 
 /*
@@ -66,15 +66,15 @@ void load_gdt()
  */
 void reload_segment_registers()
 {
-	asm volatile("mov $0x10, %ax\n\t"
-		"mov %ax, %ds\n\t"
-		"mov %ax, %es\n\t"
-		"mov %ax, %fs\n\t"
-		"mov %ax, %gs\n\t"
-		"mov %ax, %ss\n\t"
-		"ljmp $0x8, $.1\n\t"
-		".1:");
+    asm volatile("mov $0x10, %ax\n\t"
+            "mov %ax, %ds\n\t"
+            "mov %ax, %es\n\t"
+            "mov %ax, %fs\n\t"
+            "mov %ax, %gs\n\t"
+            "mov %ax, %ss\n\t"
+            "ljmp $0x8, $.1\n\t"
+            ".1:");
 
-	asm volatile("ltr %%ax" : : "a" (5 << 3));
+    asm volatile("ltr %%ax" : : "a" (5 << 3));
 }
 

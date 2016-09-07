@@ -1,16 +1,16 @@
 .macro interrupt_stub n
 .global interrupt_stub_\n
 interrupt_stub_\n:
-	pushl $0
-	pushl $\n
-	jmp isr_common
+    pushl $0
+    pushl $\n
+    jmp isr_common
 .endm
 
 .macro interrupt_stub_error n
 .global interrupt_stub_\n
-interrupt_stub_\n:
-	pushl $\n
-	jmp isr_common
+    interrupt_stub_\n:
+    pushl $\n
+    jmp isr_common
 .endm
 
 /* exceptions */
@@ -62,45 +62,45 @@ interrupt_stub 48
  * ISRs
  */
 isr_common:
-	/*
-	 * first, save all general purpose 
-	 * registers to stack
-	 */
-	push %ebp
-	push %edi
-	push %esi
-	push %edx
-	push %ecx
-	push %ebx
-	push %eax
+    /*
+     * first, save all general purpose 
+     * registers to stack
+     */
+    push %ebp
+    push %edi
+    push %esi
+    push %edx
+    push %ecx
+    push %ebx
+    push %eax
 
-	mov $0x10, %ax
-	mov %ax, %ds
-	mov %ax, %es
+    mov $0x10, %ax
+    mov %ax, %ds
+    mov %ax, %es
 
-	push %esp
-	call isr_handler_common
-	mov %eax, %esp
+    push %esp
+    call isr_handler_common
+    mov %eax, %esp
 
-	mov $0x23, %ax
-	mov %ax, %ds
-	mov %ax, %es
+    mov $0x23, %ax
+    mov %ax, %ds
+    mov %ax, %es
 
-	/*
-	 * in the end, retrieve the general
-	 * purpose registers that we saved
-	 */
-	pop %eax
-	pop %ebx
-	pop %ecx
-	pop %edx
-	pop %esi
-	pop %edi
-	pop %ebp
+    /*
+     * in the end, retrieve the general
+     * purpose registers that we saved
+     */
+    pop %eax
+    pop %ebx
+    pop %ecx
+    pop %edx
+    pop %esi
+    pop %edi
+    pop %ebp
 
-	/*
-	 * remove the interrupt number and
-	 * error code from the stack
-	 */
-	add $8, %esp
-	iret
+    /*
+     * remove the interrupt number and
+     * error code from the stack
+     */
+    add $8, %esp
+    iret
