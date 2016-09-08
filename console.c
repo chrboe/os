@@ -1,5 +1,8 @@
 #include "console.h"
 
+/*
+ * kputc prints a single ASCII character to video memory
+ */
 void kputc(char color, char chr)
 {
     char* vmem = (char*)0xb8000;

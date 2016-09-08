@@ -34,11 +34,9 @@ void init(struct multiboot_structure* mb_struc)
     pmm_init(mb_struc);
     kprintf(COL_SUC, "OK\r\n");
 
-
     kprintf(COL_NOR, "Initializing Multitasking...");
     init_multitasking();
     kprintf(COL_SUC, "OK\r\n");
-
 
     asm volatile("int $48");
     while(1);

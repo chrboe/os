@@ -6,14 +6,16 @@ static struct task* current_task = 0;
 void task_a()
 {
     while(1) {
-        kprintf(COL_NOR, "a\r\n");
+		asm volatile("movl $1, %eax");
+		asm volatile("int $48");
     }
 }
 
 void task_b()
 {
     while(1) {
-        kprintf(COL_NOR, "b\r\n");
+		asm volatile("movl $1, %eax");
+		asm volatile("int $48");
     }
 }
 

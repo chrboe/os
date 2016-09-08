@@ -1,1 +1,1 @@
-qemu-system-i386 -kernel kernel
+qemu-system-x86_64 -s -kernel kernel 
