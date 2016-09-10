@@ -6,7 +6,7 @@ static struct task* current_task = 0;
 void task_a()
 {
     while(1) {
-		asm volatile("movl $1, %eax");
+		asm volatile("movl $5, %eax");
 		asm volatile("int $48");
     }
 }

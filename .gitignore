@@ -6,4 +6,5 @@
 !*.S
 !*.ld
 !*.vimrc
+!gdbargs
 !.gitignore

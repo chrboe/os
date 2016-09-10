@@ -8,7 +8,7 @@ uint8_t init_keyboard()
     }
 
     keyboard_command(0xF4);	
-    return 1;
+    return ERR_OK;
 }
 
 void keyboard_command(uint8_t command)
@@ -16,7 +16,6 @@ void keyboard_command(uint8_t command)
     while((inb(0x64) & 0x2));
     outb(0x60, command);
 }
-
 
 static uint8_t keys[128] = 
 {
@@ -34,5 +33,5 @@ uint8_t scancode_to_ascii(uint8_t scancode)
 {
     if(scancode < 127)
         return keys[scancode];
-    return 0;
+    return ERR_ILLVAL;
 }

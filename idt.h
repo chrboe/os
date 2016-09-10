@@ -39,6 +39,8 @@ struct stackframe
     uint32_t ss;
 };
 
+void dump_frame(struct stackframe* frame);
+
 void interrupt_stub_0();
 void interrupt_stub_1();
 void interrupt_stub_2();

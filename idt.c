@@ -137,7 +137,8 @@ void pic_send_eoi(uint8_t irq)
 
 static void handle_exception(struct stackframe* frame)
 {
-    kprintf(COL_ERR, "The following exception just occoured: ");
+	//TODO: this doesn't always print (wtf?)
+    kprintf(COL_ERR, "The following exception just occoured:\r\n");
     switch(frame->interrupt) {
         case 0:
             kprintf(COL_CRI, "Division by Zero");
@@ -149,7 +150,9 @@ static void handle_exception(struct stackframe* frame)
             kprintf(COL_CRI, "(Unknown)");
             break;
     }
-    kprintf(COL_CRI, " (%d)\r\n", frame->interrupt);
+    kprintf(COL_CRI, " (%d)\r\n\r\n", frame->interrupt);
+
+	dump_frame(frame);
 
     kprintf(COL_ERR, "Aborting Kernel.");
     while(1) {
@@ -168,19 +171,29 @@ static struct stackframe* handle_irq(struct stackframe* frame)
 
         case 33:;
                 /* keyboard */
-                //			kprintf(COL_NOR, "KEYBOARD: ");
                 uint8_t scancode = inb(0x60);
                 if(scancode & (1<<7)) {
-                    //				kprintf(COL_NOR, "released ");
                 } else {
-                    //				kprintf(COL_NOR, "pressed ");
-                    kprintf(COL_NOR, "%c", scancode_to_ascii(scancode & ~(1<<7)));
+					uint8_t ascii = scancode_to_ascii(scancode & ~(1<<7));
+					if(ascii == '\n') {
+						kputc(COL_NOR, '\r');
+					}
+                    kprintf(COL_NOR, "%c", ascii);
+
                 }
-                //			kprintf(COL_NOR, "%c (%d)\r\n", scancode_to_ascii(scancode & ~(1<<7)), scancode & ~(1<<7));
                 break;
     }
     pic_send_eoi(frame->interrupt);
     return new_frame;
+}
+
+void dump_frame(struct stackframe* frame)
+{
+	kprintf(COL_NOR, "eax=0x%x  ebx=0x%x  ecx=0x%x\r\n", frame->eax, frame->ebx, frame->ecx);
+	kprintf(COL_NOR, "edx=0x%x  esi=0x%x  edi=0x%x\r\n", frame->edx, frame->esi, frame->edi);
+	kprintf(COL_NOR, "ebp=0x%x  int=0x%x  err=0x%x\r\n", frame->ebp, frame->interrupt, frame->error);
+	kprintf(COL_NOR, "eip=0x%x  cs =0x%x  efl=0x%x\r\n", frame->eip, frame->cs, frame->eflags);
+	kprintf(COL_NOR, "esp=0x%x  ss =0x%x\r\n", frame->esp, frame->ss);
 }
 
 static void handle_syscall(struct stackframe* frame)

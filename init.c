@@ -3,6 +3,7 @@
 void init(struct multiboot_structure* mb_struc)
 {
     kcls();
+
     kprintf(COL_NOR, "Building GDT... ");
     setup_gdt();
     kprintf(COL_SUC, "OK\r\n");
@@ -24,7 +25,7 @@ void init(struct multiboot_structure* mb_struc)
     kprintf(COL_SUC, "OK\r\n");
 
     kprintf(COL_NOR, "Initializing Keyboard... ");
-    if(init_keyboard()) {
+    if(init_keyboard() == ERR_OK) {
         kprintf(COL_SUC, "OK\r\n");
     } else {
         kprintf(COL_CRI, "ERR\r\n");

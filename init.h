@@ -28,8 +28,8 @@ struct multiboot_mmap {
 #include "gdt.h" /* for setup_gdt, load_gdt, reload_segment_registers */
 #include "idt.h" /* for setup_idt */
 #include "keyboard.h" /* for init_keyboard */
-#include "task.h"
-#include "pmm.h"
+#include "task.h" /* for init_multitasking */
+#include "pmm.h" /* for pmm_init */
 
 
 #endif /* !INIT_H */

@@ -2,6 +2,7 @@
 #define CONSOLE_H_INCLUDED
 
 #include "util.h"
+#include "pmm.h"
 
 typedef __builtin_va_list       va_list;
 #define va_start(ap, X)         __builtin_va_start(ap, X)

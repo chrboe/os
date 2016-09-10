@@ -3,6 +3,7 @@
 
 #include "util.h"
 #include "console.h"
+#include "errors.h"
 
 #include <stdint.h>
 
