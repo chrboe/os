@@ -36,20 +36,21 @@ void init(struct multiboot_structure* mb_struc)
     kprintf(COL_SUC, "OK\r\n");
 
 	kprintf(COL_NOR, "Initializing ATA interface... ");
-	if(ata_init() == ERR_OK) {
+	int ata_init_stat = ata_init();
+	if(ata_init_stat == ERR_OK) {
 		kputs(COL_SUC, "OK\r\n");
+	} else if(ata_init_stat == ERR_NOTFOUND) {
+		kputs(COL_WAR, "OK\r\n");
 	} else {
 		kputs(COL_CRI, "ERR\r\n");
 	}
 
 	uint16_t dst[256];
-	uint8_t res = ata_read(dst, ATA_READ_MASTER, 0, 1);
+	int res = ata_read(dst, ATA_READ_MASTER, 0, 1);
 	if(res == ERR_OK) {
 		kputs(COL_SUC, "READ OK\r\n");
 		kprintf(COL_NOR, "DATA: %s\r\n", dst);
 	}
-
-	
 
 	while(1);
 

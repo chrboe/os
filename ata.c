@@ -8,27 +8,30 @@
 #define IDEN_INVAL 1
 #define IDEN_VALID 2
 
+#define DIR_READ 0
+#define DIR_WRITE 1
+
 static void select_master()
 {
-	outb(0x1F6, 0xA0);
+	outb(ATA_SELECT, ATA_SELECT_MASTER);
 }
 
 static void select_slave()
 {
-	outb(0x1F6, 0xB0);
+	outb(ATA_SELECT, ATA_SELECT_SLAVE);
 }
 
 static int identify(uint16_t select)
 {
-	outb(0x1F6, select);
-	outb(0x1F2, 0x00); /* set sectorcount to 0 */
-	outb(0x1F3, 0x00); /* set the lba ports to 0 */
-	outb(0x1F4, 0x00);
-	outb(0x1F5, 0x00);
+	outb(ATA_SELECT, select);
+	outb(ATA_SECCOUNT, 0x00); /* set sectorcount to 0 */
+	outb(ATA_LBA_LO, 0x00); /* set the lba ports to 0 */
+	outb(ATA_LBA_MI, 0x00);
+	outb(ATA_LBA_HI, 0x00);
 
-	outb(0x1F7, 0xEC); /* send the IDENTIFY command */
+	outb(ATA_COMMAND, 0xEC); /* send the IDENTIFY command */
 
-	uint8_t status = inb(0x1F7);
+	uint8_t status = inb(ATA_STATUS);
 
 	/*
 	 * now that we know the "response" of the
@@ -51,15 +54,15 @@ static int identify(uint16_t select)
 	}
 
 	while(status & 0x80) {
-		status = inb(0x1F7);
+		status = inb(ATA_STATUS);
 	}
 
-	if(inb(0x1F4) != 0 || inb(0x1F5) != 0) {
+	if(inb(ATA_LBA_LO) != 0 || inb(ATA_LBA_MI) != 0) {
 		return IDEN_INVAL;
 	}
 
 	while(1) {
-		status = inb(0x1F7);
+		status = inb(ATA_STATUS);
 		if((status & 0x08) | (status & 0x01)) {
 			break;
 		}
@@ -79,7 +82,7 @@ static int identify(uint16_t select)
 
 	uint16_t data[256];
 	for(uint16_t i = 0; i < 256; i++) {
-		data[i]  = inw(0x1F0) << 8;
+		data[i]  = inw(ATA_DATA) << 8;
 	}
 
 	return IDEN_VALID;
@@ -107,7 +110,7 @@ int discover_devices()
 	 * and check if all the bits are high.
 	 */
 
-	uint8_t status = inb(0x1F7);
+	uint8_t status = inb(ATA_STATUS);
 	if(status == 0xFF) {
 		return res;
 	}
@@ -123,12 +126,12 @@ int discover_devices()
 	 * are present, if any.
 	 */
 
-	int id = identify(0xA0);
+	int id = identify(ATA_SELECT_MASTER);
 	if(id == IDEN_VALID) {
 		res |= DEV_MASTER;
 	}
 
-	id = identify(0xB0);
+	id = identify(ATA_SELECT_SLAVE);
 	if(id == IDEN_VALID) {
 		res |= DEV_SLAVE;
 	}
@@ -146,45 +149,45 @@ int ata_init()
 	return ERR_NOTFOUND;
 }
 
-uint8_t ata_read(uint16_t* dst, uint16_t select, uint32_t lba, uint8_t count)
+static int ata_io(uint16_t* data, uint16_t select, uint32_t lba, uint8_t count, int direction)
 {
 	/*
-	 * this function reads from an ATA harddisk.
-	 * currently it only supports polling
+	 * this function reads from or writes to
+	 * an ATA harddisk.
+	 * currently it only supports polling.
 	 *
-	 * to get data from the harddisk, we first
-	 * have to select our drive (master or slave)
-	 * and tell the drive how much data we wanna
-	 * read and from where we wanna read it.
+	 * to get data from or write data to the
+	 * harddisk,we first have to select our drive
+	 * (master or slave) and tell the drive how 
+	 * much data we wanna read or write and 
+	 * from/to where we wanna read/write it.
 	 * this is done by sending 0xE0 (master)
 	 * or 0xF0 (slave) ORed with the highest 4
 	 * bits of the LBA to port 0x1F6.
 	 */
-	outb(0x1F6, select | ((lba >> 24) & 0x0F));
-
-	/*
-	 * this just writes a null byte to 0x1F1.
-	 * this isn't technically needed i guess(?)
-	 */
-	outb(0x1F1, 0x00);
+	outb(ATA_SELECT, select | ((lba >> 24) & 0x0F));
 
 	/*
 	 * write how many sectors we wanna read
 	 * to 0x1F2.
 	 */
-	outb(0x1F2, count);
+	outb(ATA_SECCOUNT, count);
 
 	/*
 	 * write the lba to 0x1F[3-5]
 	 */
-	outb(0x1F3, (uint8_t)lba);
-	outb(0x1F4, (uint8_t)(lba >> 8));
-	outb(0x1F5, (uint8_t)(lba >> 16));
+	outb(ATA_LBA_LO, (uint8_t)lba);
+	outb(ATA_LBA_MI, (uint8_t)(lba >> 8));
+	outb(ATA_LBA_HI, (uint8_t)(lba >> 16));
 
 	/*
-	 * finally, send the actual "read" command
+	 * finally, send the actual command
 	 */
-	outb(0x1F7, 0x20);
+	if(direction == DIR_READ) {
+		outb(ATA_COMMAND, 0x20);
+	} else {
+		outb(ATA_COMMAND, 0x30);
+	}
 
 	/*
 	 * now we have to poll for our results.
@@ -193,7 +196,7 @@ uint8_t ata_read(uint16_t* dst, uint16_t select, uint32_t lba, uint8_t count)
 	 */
 	uint8_t status = 0;
 	for(int i = 0; i < 4; i++) {
-		inb(0x1F7);
+		inb(ATA_STATUS);
 	}
 
 	/*
@@ -211,9 +214,14 @@ uint8_t ata_read(uint16_t* dst, uint16_t select, uint32_t lba, uint8_t count)
 		 * two would indicate an error.
 		 */
 		do {
-			status = inb(0x1F7);
+			status = inb(ATA_STATUS);
 		} while(((status & 0x80) && !(status & 0x08)) && !(status & 0x01) && !(status & 0x20));
 
+		/*
+		 * if an error occoured, we just print it to
+		 * the console right now. (TODO make this
+		 * better)
+		 */
 		if((status & 0x01) || (status & 0x20)) {
 			kprintf(COL_ERR, "ERROR\r\n");
 			return ERR_OTHER;
@@ -221,21 +229,36 @@ uint8_t ata_read(uint16_t* dst, uint16_t select, uint32_t lba, uint8_t count)
 
 		/*
 		 * once we got our successful response,
-		 * continue by reading 256 words
+		 * continue by reading/writing 256 words
 		 * (= 512 bytes = 1 sector) from io port 0x1F0.
 		 */
 		for(uint16_t j = 0; j < 256; j++) {
-			dst[(i*256)+j] = inw(0x1F0); 
+			if(direction == DIR_READ) {
+				data[(i*256)+j] = inw(ATA_DATA);
+			} else {	
+				outw(ATA_DATA, data[(i*256)+j]);
+			}
 		}
 
 		i++;
 
 		/*
-		 * continue until we have all our data.
+		 * continue until we have read/written all
+		 * our data.
 		 */
 	}
 
 	return ERR_OK;
+}
+
+int ata_read(uint16_t* dst, uint16_t select, uint32_t lba, uint8_t count)
+{
+	ata_io(dst, select, lba, count, DIR_READ);
+}
+
+int ata_write(uint16_t* src, uint16_t select, uint32_t lba, uint8_t count)
+{
+	ata_io(src, select, lba, count, DIR_WRITE);
 }
 
 #undef IDEN_NONEXIST

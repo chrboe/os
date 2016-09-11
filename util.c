@@ -36,3 +36,8 @@ uint16_t inw(uint16_t port)
 	asm volatile("inw %1, %0" : "=a" (result) : "d" (port));
 	return result;
 }
+
+void outw(uint16_t port, uint16_t data)
+{
+    asm volatile("outw %0, %1" : : "a" (data), "Nd" (port));
+}
