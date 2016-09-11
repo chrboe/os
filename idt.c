@@ -182,6 +182,11 @@ static struct stackframe* handle_irq(struct stackframe* frame)
 
                 }
                 break;
+		case 46:
+				break;
+		default:
+				kprintf(COL_WAR, "Unknown IRQ: 0x%x\r\n", frame->interrupt);
+				break;
     }
     pic_send_eoi(frame->interrupt);
     return new_frame;

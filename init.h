@@ -30,6 +30,6 @@ struct multiboot_mmap {
 #include "keyboard.h" /* for init_keyboard */
 #include "task.h" /* for init_multitasking */
 #include "pmm.h" /* for pmm_init */
-
+#include "ata.h" /* for init_ata */
 
 #endif /* !INIT_H */

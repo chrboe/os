@@ -8,6 +8,6 @@ void kmemset(char* start, char content, uint32_t bytes);
 
 void outb(uint16_t port, uint8_t data);
 uint8_t inb(uint16_t port);
-
+uint16_t inw(uint16_t port);
 
 #endif /* !UTIL_H */
