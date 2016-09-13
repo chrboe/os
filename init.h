@@ -31,5 +31,6 @@ struct multiboot_mmap {
 #include "task.h" /* for init_multitasking */
 #include "pmm.h" /* for pmm_init */
 #include "ata.h" /* for init_ata */
+#include "fs/fsfs.h" /* for fsfs_load */
 
 #endif /* !INIT_H */

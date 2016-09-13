@@ -41,8 +41,8 @@ void kputs(char color, const char* text)
 
 void kputi(char color, unsigned long num, int base)
 {
-	char buf[65];
     char* chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	char buf[65];
     char* p;
 
     if(base < 2 || base > 36)

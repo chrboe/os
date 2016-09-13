@@ -45,12 +45,13 @@ void init(struct multiboot_structure* mb_struc)
 		kputs(COL_CRI, "ERR\r\n");
 	}
 
-	uint16_t dst[256];
-	int res = ata_read(dst, ATA_READ_MASTER, 0, 1);
-	if(res == ERR_OK) {
-		kputs(COL_SUC, "READ OK\r\n");
-		kprintf(COL_NOR, "DATA: %s\r\n", dst);
-	}
+	/*struct device dev = { "test", DEVICE_ATA, ATA_SELECT_MASTER };
+
+	struct fsfs filesys;
+	fsfs_load(&dev, 0, &filesys);*/
+
+	uint16_t data[256];
+	int stat = ata_read(data, ATA_SELECT_MASTER, 0, 1);
 
 	while(1);
 

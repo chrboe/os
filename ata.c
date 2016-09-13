@@ -82,7 +82,7 @@ static int identify(uint16_t select)
 
 	uint16_t data[256];
 	for(uint16_t i = 0; i < 256; i++) {
-		data[i]  = inw(ATA_DATA) << 8;
+		data[i]  = inw(ATA_DATA);
 	}
 
 	return IDEN_VALID;
@@ -224,6 +224,34 @@ static int ata_io(uint16_t* data, uint16_t select, uint32_t lba, uint8_t count, 
 		 */
 		if((status & 0x01) || (status & 0x20)) {
 			kprintf(COL_ERR, "ERROR\r\n");
+			uint8_t err = inb(0x1F1);
+			if(err & 1<<1) {
+				kprintf(COL_CRI, "No Media\r\n");
+			}
+			
+			if(err & 1<<2) {
+				kprintf(COL_CRI, "Command aborted\r\n");
+			}
+			
+			if(err & 1<<3) {
+				kprintf(COL_CRI, "CD eject\r\n");
+			}
+
+			if(err & 1<<4) {
+				kprintf(COL_CRI, "Sector-ID not found\r\n");
+			}
+
+			if(err & 1<<5) {
+				kprintf(COL_CRI, "Medium changed\r\n");
+			}
+
+			if(err & 1<<6) {
+				kprintf(COL_CRI, "Error in data field\r\n");
+			}
+
+			if(err & 1<<7) {
+				kprintf(COL_CRI, "CRC error\r\n");
+			}
 			return ERR_OTHER;
 		}
 
@@ -253,12 +281,12 @@ static int ata_io(uint16_t* data, uint16_t select, uint32_t lba, uint8_t count, 
 
 int ata_read(uint16_t* dst, uint16_t select, uint32_t lba, uint8_t count)
 {
-	ata_io(dst, select, lba, count, DIR_READ);
+	return ata_io(dst, select, lba, count, DIR_READ);
 }
 
 int ata_write(uint16_t* src, uint16_t select, uint32_t lba, uint8_t count)
 {
-	ata_io(src, select, lba, count, DIR_WRITE);
+	return ata_io(src, select, lba, count, DIR_WRITE);
 }
 
 #undef IDEN_NONEXIST

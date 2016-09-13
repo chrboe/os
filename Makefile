@@ -1,12 +1,12 @@
 SRCS = $(shell find -name '*.[cS]')
-
+CURRENT_DIR = $(shell pwd)
 OBJS = $(addsuffix .o,$(basename $(SRCS)))
 
 CC = gcc
 LD = ld 
 
 ASFLAGS = -m32
-CFLAGS = -m32 -Wall -g -fno-stack-protector
+CFLAGS = -m32 -Wall -g -fno-stack-protector -I$(CURRENT_DIR)
 LDFLAGS = -melf_i386 -Tkernel.ld
 
 kernel: $(OBJS)
