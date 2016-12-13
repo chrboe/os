@@ -50,11 +50,22 @@ void init(struct multiboot_structure* mb_struc)
 	struct fsfs filesys;
 	fsfs_load(&dev, 0, &filesys);*/
 
+	kprintf(COL_NOR, "Testing ATA read... ");
+
 	uint16_t data[256];
-	int stat = ata_read(data, ATA_SELECT_MASTER, 0, 1);
+	int stat = ata_read(data, ATA_READ_MASTER, 0, 1);
+
+	if(stat == ERR_OK) {
+		kprintf(COL_SUC, "OK\r\n");
+	} else {
+		kprintf(COL_CRI, "ERROR\r\n");
+	}
+
+	for(int i = 0; i < 256; i++) {
+		kprintf(COL_NOR, "%x ", data[i]);
+	}
 
 	while(1);
-
     kprintf(COL_NOR, "Initializing Multitasking...");
     init_multitasking();
     kprintf(COL_SUC, "OK\r\n");

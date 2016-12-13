@@ -24,6 +24,7 @@ static void select_slave()
 static int identify(uint16_t select)
 {
 	outb(ATA_SELECT, select);
+
 	outb(ATA_SECCOUNT, 0x00); /* set sectorcount to 0 */
 	outb(ATA_LBA_LO, 0x00); /* set the lba ports to 0 */
 	outb(ATA_LBA_MI, 0x00);
@@ -32,6 +33,7 @@ static int identify(uint16_t select)
 	outb(ATA_COMMAND, 0xEC); /* send the IDENTIFY command */
 
 	uint8_t status = inb(ATA_STATUS);
+
 
 	/*
 	 * now that we know the "response" of the
@@ -115,6 +117,7 @@ int discover_devices()
 		return res;
 	}
 
+
 	/*
 	 * if the above condition was true, there is
 	 * definitely no device on the bus. note that
@@ -142,6 +145,7 @@ int discover_devices()
 int ata_init()
 {
 	int disc = discover_devices();
+
 	if(disc) {
 		return ERR_OK;
 	}
@@ -192,7 +196,7 @@ static int ata_io(uint16_t* data, uint16_t select, uint32_t lba, uint8_t count, 
 	/*
 	 * now we have to poll for our results.
 	 * the first 4 polls can be discarded because
-	 * the error bits are all fucked up.
+	 * the drive needs about 400ns to get the result.
 	 */
 	uint8_t status = 0;
 	for(int i = 0; i < 4; i++) {
@@ -223,7 +227,7 @@ static int ata_io(uint16_t* data, uint16_t select, uint32_t lba, uint8_t count, 
 		 * better)
 		 */
 		if((status & 0x01) || (status & 0x20)) {
-			kprintf(COL_ERR, "ERROR\r\n");
+			kprintf(COL_ERR, "ERROR\r\n", status);
 			uint8_t err = inb(0x1F1);
 			if(err & 1<<1) {
 				kprintf(COL_CRI, "No Media\r\n");

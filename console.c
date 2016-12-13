@@ -45,14 +45,14 @@ void kputi(char color, unsigned long num, int base)
 	char buf[65];
     char* p;
 
-    if(base < 2 || base > 36)
+    if(base < 2 || base > 36) {
         return;
+	}
 
 	p = buf + 64;
 	*p = 0;
 
-	do
-    {
+	do {
         *--p = chars[num % base];
         num /= base;
     } while(num);
