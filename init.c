@@ -36,7 +36,12 @@ void init(struct multiboot_structure* mb_struc)
     kprintf(COL_SUC, "OK\r\n");
 
 	kprintf(COL_NOR, "Initializing ATA interface... ");
-	int ata_init_stat = ata_init();
+
+	struct ata_device *devices[2];
+	devices[0] = pmm_alloc(sizeof(struct ata_device));
+	devices[1] = pmm_alloc(sizeof(struct ata_device));
+
+	int ata_init_stat = ata_init(devices);
 	if(ata_init_stat == ERR_OK) {
 		kputs(COL_SUC, "OK\r\n");
 	} else if(ata_init_stat == ERR_NOTFOUND) {
@@ -45,15 +50,10 @@ void init(struct multiboot_structure* mb_struc)
 		kputs(COL_CRI, "ERR\r\n");
 	}
 
-	/*struct device dev = { "test", DEVICE_ATA, ATA_SELECT_MASTER };
-
-	struct fsfs filesys;
-	fsfs_load(&dev, 0, &filesys);*/
-
 	kprintf(COL_NOR, "Testing ATA read... ");
 
-	uint16_t data[256];
-	int stat = ata_read(data, ATA_READ_MASTER, 0, 1);
+	uint16_t data[512];
+	int stat = ata_read(data, devices[0], 0, 2);
 
 	if(stat == ERR_OK) {
 		kprintf(COL_SUC, "OK\r\n");
@@ -61,9 +61,28 @@ void init(struct multiboot_structure* mb_struc)
 		kprintf(COL_CRI, "ERROR\r\n");
 	}
 
-	for(int i = 0; i < 256; i++) {
+
+
+	/*
+	kprintf(COL_NOR, "Testing ATA write... ");
+	data[0]++;
+	int wstat = ata_write(data, devices[0], 0, 1);
+	if(wstat == ERR_OK) {
+		kprintf(COL_SUC, "OK\r\n");
+	} else {
+		kprintf(COL_CRI, "ERROR\r\n");
+	}
+	*/
+
+	for(int i = 0; i < 128; i++) {
 		kprintf(COL_NOR, "%x ", data[i]);
 	}
+
+	kputs(COL_NOR, "\r\n");
+	//kprintf(COL_NOR, "inodes: %d\r\n", *(uint32_t*)data);
+	//kprintf(COL_NOR, "blocks: %d\r\n", *(uint32_t*)(data+4));
+	pmm_free(devices[0]);
+	pmm_free(devices[1]);
 
 	while(1);
     kprintf(COL_NOR, "Initializing Multitasking...");
