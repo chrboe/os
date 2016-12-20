@@ -53,15 +53,13 @@ void init(struct multiboot_structure* mb_struc)
 	kprintf(COL_NOR, "Testing ATA read... ");
 
 	uint16_t data[512];
-	int stat = ata_read(data, devices[0], 0, 2);
+	int stat = ata_read(data, devices[0], 1, 2);
 
 	if(stat == ERR_OK) {
 		kprintf(COL_SUC, "OK\r\n");
 	} else {
 		kprintf(COL_CRI, "ERROR\r\n");
 	}
-
-
 
 	/*
 	kprintf(COL_NOR, "Testing ATA write... ");
@@ -74,13 +72,24 @@ void init(struct multiboot_structure* mb_struc)
 	}
 	*/
 
-	for(int i = 0; i < 128; i++) {
+	/*for(int i = 0; i < 128; i++) {
 		kprintf(COL_NOR, "%x ", data[i]);
+	}*/
+
+	kputs(COL_NOR, "Discovering GPT... ");
+
+	int gpt_stat = discover_gpt(devices[0]);
+	if(gpt_stat == ERR_OK) {
+		kputs(COL_SUC, "OK\r\n");
+	} else {
+		kputs(COL_CRI, "ERROR\r\n");
 	}
 
+	kprintf(COL_NOR, "Signature: %x %x %x %x\r\n", data[0], data[1], data[2], data[3]);
+
 	kputs(COL_NOR, "\r\n");
-	//kprintf(COL_NOR, "inodes: %d\r\n", *(uint32_t*)data);
-	//kprintf(COL_NOR, "blocks: %d\r\n", *(uint32_t*)(data+4));
+	kprintf(COL_NOR, "inodes: %d\r\n", *(uint32_t*)data);
+	kprintf(COL_NOR, "blocks: %d\r\n", *(uint32_t*)(data+4));
 	pmm_free(devices[0]);
 	pmm_free(devices[1]);
 
