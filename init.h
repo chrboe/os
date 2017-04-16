@@ -32,6 +32,7 @@ struct multiboot_mmap {
 #include "pmm.h" /* for pmm_init */
 #include "io/ata.h" /* for init_ata */
 #include "io/gpt.h" /* for discover_gpt */
+#include "io/uart.h" /* for uart_init */
 //#include "fs/fsfs.h" /* for fsfs_load */
 
 #endif /* !INIT_H */

@@ -170,23 +170,22 @@ static struct stackframe* handle_irq(struct stackframe* frame)
             break;
 
         case 33:;
-                /* keyboard */
-                uint8_t scancode = inb(0x60);
-                if(scancode & (1<<7)) {
-                } else {
-					uint8_t ascii = scancode_to_ascii(scancode & ~(1<<7));
-					if(ascii == '\n') {
-						kputc(COL_NOR, '\r');
-					}
-                    kprintf(COL_NOR, "%c", ascii);
-
+            /* keyboard */
+            uint8_t scancode = inb(0x60);
+            if(scancode & (1<<7)) {
+            } else {
+                uint8_t ascii = scancode_to_ascii(scancode & ~(1<<7));
+                if(ascii == '\n') {
+                    kputc(COL_NOR, '\r');
                 }
-                break;
+                kprintf(COL_NOR, "%c", ascii);
+            }
+            break;
 		case 46:
-				break;
+            break;
 		default:
-				kprintf(COL_WAR, "Unknown IRQ: 0x%x\r\n", frame->interrupt);
-				break;
+            kprintf(COL_WAR, "Unknown IRQ: 0x%x\r\n", frame->interrupt);
+            break;
     }
     pic_send_eoi(frame->interrupt);
     return new_frame;
@@ -210,6 +209,7 @@ static void handle_syscall(struct stackframe* frame)
 struct stackframe* isr_handler_common(struct stackframe* frame)
 {
     struct stackframe* new_frame = frame;
+    uart_printf("interrupt %d\r\n", frame->interrupt);
     if(frame->interrupt <= 0x1f) {
         handle_exception(frame); 
     } else if(frame->interrupt >= 0x20 && frame->interrupt <= 0x2f) {

@@ -104,8 +104,10 @@ static int identify(struct ata_device *dev)
 	dev->lba28_sectors = *(uint32_t*)(data+60);
 	if(dev->lba28_sectors == 0) {
 		dev->supports_lba28 = 0;
-	} else
+	} else {
 		kprintf(COL_NOR, "dev supports lba28. sectors: %d\r\n", dev->lba28_sectors);
+	}
+
 	return IDEN_VALID;
 }
 

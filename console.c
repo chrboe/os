@@ -29,7 +29,7 @@ void kputc(char color, char chr)
 
 
 /*
- * kputs offers an early way of printing a constant, colored string 
+ * kputs offers an early way of printing a constant, colored string
  * to video memory.
  */
 void kputs(char color, const char* text)

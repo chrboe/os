@@ -10,17 +10,21 @@ void* pmm_alloc()
         for(int j = 0; j < 32; j++) {
             if(page_free_bits[i] & 1<<j) {
                 page_free_bits[i] &= ~(1 << j);
+                uart_printf("malloc %x\r\n", ((i * 32 + j) * 4096));
                 return (void*)((i * 32 + j) * 4096);
             }
         }
     }
+    uart_puts("malloc 0\r\n");
     return 0;
 }
 
 void pmm_free(void* p)
 {
-    uint32_t i = (uint32_t)p / 4096;
-    page_free_bits[i/32] |= 1<<(i%32);
+    uart_printf("free %x\r\n", p);
+    uintptr_t i = (uintptr_t)p / 4096;
+    uart_printf("i=%x\r\n", i);
+    page_free_bits[i/32] |= (1<<(i%32));
 }
 
 void pmm_init(struct multiboot_structure* mb_struc)
