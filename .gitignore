@@ -1,11 +1,9 @@
-*
-!io
-!*.c
-!*.h
-!Makefile
-!*.sh
-!*.S
-!*.ld
-!*.vimrc
-!gdbargs
-!.gitignore
+# hard drive / floppy images
+**/*.img
+**/*.vmdk
+
+# object files
+**/*.o
+
+# log files
+**/*.log

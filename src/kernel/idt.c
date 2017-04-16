@@ -203,13 +203,14 @@ void dump_frame(struct stackframe* frame)
 static void handle_syscall(struct stackframe* frame)
 {
     uint32_t scallnum = frame->eax;
+    //uart_printf("syscall %d\r\n", scallnum);
     kprintf(COL_SUC, "System Call #%d. Hello World!\r\n", scallnum);
 }
 
 struct stackframe* isr_handler_common(struct stackframe* frame)
 {
     struct stackframe* new_frame = frame;
-    uart_printf("interrupt %d\r\n", frame->interrupt);
+    //uart_printf("interrupt %d\r\n", frame->interrupt);
     if(frame->interrupt <= 0x1f) {
         handle_exception(frame); 
     } else if(frame->interrupt >= 0x20 && frame->interrupt <= 0x2f) {

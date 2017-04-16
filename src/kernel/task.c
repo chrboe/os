@@ -101,7 +101,7 @@ struct stackframe* schedule(struct stackframe* frame)
     uart_printf("first: 0x%x\r\ncurrent: 0x%x\r\n", first_task, current_task);
     if(first_task == 0) {
         /* we have no tasks */
-        kputs(COL_NOR, "no tasks\r\n");
+        //kputs(COL_NOR, "no tasks\r\n");
         return frame;
     }
 

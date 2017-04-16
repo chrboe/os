@@ -18,7 +18,7 @@ typedef __builtin_va_list       va_list;
 
 void kputs(char color, const char* str);
 void kputc(char color, char c);
-void kputi(char color, unsigned long um, int base);
+void kputi(char color, uint32_t um, int base);
 void kprintf(char color, const char* fmt, ...);
 void kcls();
 void set_cursor(uint8_t row, uint8_t col);

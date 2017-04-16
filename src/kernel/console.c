@@ -39,11 +39,13 @@ void kputs(char color, const char* text)
     }
 }
 
-void kputi(char color, unsigned long num, int base)
+void kputi(char color, uint32_t num, int base)
 {
-    char* chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    static char* chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	char buf[65];
     char* p;
+
+    //uart_printf("inside puti %d\r\n", num);
 
     if(base < 2 || base > 36) {
         return;
@@ -74,11 +76,13 @@ void kprintf(char color, const char* format, ...)
     for(char* p = (char*)format; *p; p++) {
         if(*p == '%') {
             switch(*++p) {
-                case 'd':
-                    kputi(color, va_arg(args, unsigned long), 10);
+                case 'd':;
+                    uint32_t num = va_arg(args, uint32_t);
+                    uart_printf("puti %d\r\n", num);
+                    kputi(color, num, 10);
                     break;
                 case 'x':
-                    kputi(color, va_arg(args, unsigned long), 16);
+                    kputi(color, va_arg(args, uint32_t), 16);
                     break;
                 case 's':
                     kputs(color, va_arg(args, char*));

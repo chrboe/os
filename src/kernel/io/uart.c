@@ -18,7 +18,7 @@ void uart_dump_frame(struct stackframe *f)
 
 void uart_puti(uint32_t num, int base)
 {
-    char* chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    static char* chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     char buf[65];
     char* p;
 
@@ -46,10 +46,10 @@ void uart_printf(const char* format, ...)
         if(*p == '%') {
             switch(*++p) {
                 case 'd':
-                    uart_puti(va_arg(args, unsigned long), 10);
+                    uart_puti(va_arg(args, uint32_t), 10);
                     break;
                 case 'x':
-                    uart_puti(va_arg(args, unsigned long), 16);
+                    uart_puti(va_arg(args, uint32_t), 16);
                     break;
                 case 's':
                     uart_puts(va_arg(args, char*));

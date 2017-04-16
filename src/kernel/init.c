@@ -120,6 +120,7 @@ void init(struct multiboot_structure* mb_struc)
     kprintf(COL_NOR, "last lba: %d\r\n", COMBINE16TO64(array[23], array[22], array[21], array[20]));*/
 
 
+    while(1);
     kprintf(COL_NOR, "Initializing Multitasking...");
     init_multitasking();
     kprintf(COL_SUC, "OK\r\n");
