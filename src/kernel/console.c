@@ -41,7 +41,7 @@ void kputs(char color, const char* text)
 
 void kputi(char color, uint32_t num, int base)
 {
-    static char* chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    static char chars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	char buf[65];
     char* p;
 
@@ -77,9 +77,7 @@ void kprintf(char color, const char* format, ...)
         if(*p == '%') {
             switch(*++p) {
                 case 'd':;
-                    uint32_t num = va_arg(args, uint32_t);
-                    uart_printf("puti %d\r\n", num);
-                    kputi(color, num, 10);
+                    kputi(color, va_arg(args, uint32_t), 10);
                     break;
                 case 'x':
                     kputi(color, va_arg(args, uint32_t), 16);

@@ -24,6 +24,13 @@ struct multiboot_mmap {
     uint32_t type;
 } __attribute__((packed));
 
+struct multiboot_module {
+    uint32_t    mod_start;
+    uint32_t    mod_end;
+    char*       cmdline;
+    uint32_t    reserved;
+} __attribute__((packed));
+
 #include "console.h" /* for kprintf, kcls */
 #include "gdt.h" /* for setup_gdt, load_gdt, reload_segment_registers */
 #include "idt.h" /* for setup_idt */
@@ -33,6 +40,8 @@ struct multiboot_mmap {
 #include "io/ata.h" /* for init_ata */
 #include "io/gpt.h" /* for discover_gpt */
 #include "io/uart.h" /* for uart_init */
+#include "time.h"
+#include "pit.h"
 //#include "fs/fsfs.h" /* for fsfs_load */
 
 #endif /* !INIT_H */

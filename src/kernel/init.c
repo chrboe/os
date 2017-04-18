@@ -70,7 +70,6 @@ void init(struct multiboot_structure* mb_struc)
 		kprintf(COL_CRI, "ERROR\r\n");
 	}
 
-
 	/*
 	kprintf(COL_NOR, "Testing ATA write... ");
 	data[0]++;
@@ -121,20 +120,25 @@ void init(struct multiboot_structure* mb_struc)
     kprintf(COL_NOR, "first lba: %d\r\n", COMBINE16TO64(array[19], array[18], array[17], array[16]));
     kprintf(COL_NOR, "last lba: %d\r\n", COMBINE16TO64(array[23], array[22], array[21], array[20]));*/
 
+    pmm_free(devices[0]);
+    pmm_free(devices[1]);
+
+    struct datetime time;
+    get_time(&time);
+    kprintf(COL_NOR, "Date: %d%d-%d-%d, Time: %d:%d:%d\r\n", (uint32_t)time.century, (uint32_t)time.year, (uint32_t)time.month, (uint32_t)time.day, (uint32_t)time.hours, (uint32_t)time.minutes, (uint32_t)time.seconds);
+    uart_printf( "Date: %d%d-%d-%d, Time: %d:%d:%d\r\n", (uint32_t)time.century, (uint32_t)time.year, (uint32_t)time.month, (uint32_t)time.day, (uint32_t)time.hours, (uint32_t)time.minutes, (uint32_t)time.seconds);
+
+    kputs(COL_NOR, "Initializing PIT... ");
+    uint8_t pit_stat = pit_init(100);
+    if(pit_stat == ERR_OK) {
+        kprintf(COL_SUC, "OK\r\n");
+    } else {
+        kprintf(COL_CRI, "ERROR\r\n");
+    }
 
     kprintf(COL_NOR, "Initializing Multitasking...");
     init_multitasking();
     kprintf(COL_SUC, "OK\r\n");
-
-    /*
-     * BUG: moving these two lines above init_multitasking() makes the kernel triple-fault.
-     * this is probably because the memory is left initialized and not cleared by pmm_alloc.
-     * this probably confuses the task initializer somehow when it allocates space for the stack,
-     * but i don't really know.
-     * proposed fix: wait for a proper paging mechanism
-     */
-    pmm_free(devices[0]);
-    pmm_free(devices[1]);
 
     while(1);
 }

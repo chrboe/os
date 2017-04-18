@@ -5,10 +5,11 @@ static struct task* current_task = 0;
 
 void task_a()
 {
-    asm volatile("movl $1, %eax");
     while(1) {
+
+        asm volatile("movl $1, %eax");
         asm volatile("int $48");
-        //uart_puts("task a\r\n");
+        uart_puts("task a\r\n");
     }
 }
 
@@ -89,10 +90,12 @@ struct task* init_task(void* func)
 
 void init_multitasking()
 {
+    asm("cli");
     init_task(task_a);
     init_task(task_b);
     init_task(task_c);
     init_task(task_d);
+    asm("sti");
 }
 
 struct stackframe* schedule(struct stackframe* frame)
