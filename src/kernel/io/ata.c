@@ -92,7 +92,7 @@ static int identify(struct ata_device *dev)
 		 */
 		dev->lba48_sectors = *(uint64_t*)(data+100); 
 
-		kprintf(COL_NOR, "dev supports lba48. sectors: %d\r\n", dev->lba48_sectors);
+		//kprintf(COL_NOR, "dev supports lba48. sectors: %d\r\n", dev->lba48_sectors);
 	}
 
 	/*
@@ -105,7 +105,7 @@ static int identify(struct ata_device *dev)
 	if(dev->lba28_sectors == 0) {
 		dev->supports_lba28 = 0;
 	} else {
-		kprintf(COL_NOR, "dev supports lba28. sectors: %d\r\n", dev->lba28_sectors);
+		//kprintf(COL_NOR, "dev supports lba28. sectors: %d\r\n", dev->lba28_sectors);
 	}
 
 	return IDEN_VALID;
@@ -135,10 +135,16 @@ int discover_devices(struct ata_device *devices[2])
 
 	uint8_t status_m = inb(ATA_STATUS(ATA_BUS_MASTER));
 	uint8_t status_s = inb(ATA_STATUS(ATA_BUS_SLAVE));
+
+	int exists = res;
+
 	if(status_m == 0xFF && status_s == 0xFF) {
 		return res;
+	} else if(status_m != 0xFF) {
+		exists |= DEV_MASTER;
+	} else if (status_s != 0xFF) {
+		exists |= DEV_SLAVE;
 	}
-
 
 	/*
 	 * if the above condition was true, there is
@@ -151,20 +157,25 @@ int discover_devices(struct ata_device *devices[2])
 	 * are present, if any.
 	 */
 
-	devices[0]->bus = ATA_BUS_MASTER;
-	devices[0]->select = ATA_SELECT_MASTER;
-	devices[0]->select_read = ATA_READ_MASTER;
-	int id = identify(devices[0]);
-	if(id == IDEN_VALID) {
-		res |= DEV_MASTER;
+	if (exists & DEV_MASTER) {
+		devices[0]->bus = ATA_BUS_MASTER;
+		devices[0]->select = ATA_SELECT_MASTER;
+		devices[0]->select_read = ATA_READ_MASTER;
+		int id = identify(devices[0]);
+		if(id == IDEN_VALID) {
+			res |= DEV_MASTER;
+		}
 	}
 
-	devices[1]->bus = ATA_BUS_SLAVE;
-	devices[1]->select = ATA_SELECT_SLAVE;
-	devices[1]->select_read = ATA_READ_SLAVE;
-	id = identify(devices[1]);
-	if(id == IDEN_VALID) {
-		res |= DEV_SLAVE;
+
+	if (exists & DEV_SLAVE) {
+		devices[1]->bus = ATA_BUS_SLAVE;
+		devices[1]->select = ATA_SELECT_SLAVE;
+		devices[1]->select_read = ATA_READ_SLAVE;
+		int id = identify(devices[1]);
+		if(id == IDEN_VALID) {
+			res |= DEV_SLAVE;
+		}
 	}
 
 	return res;

@@ -172,6 +172,13 @@ static struct stackframe* handle_irq(struct stackframe* frame)
         case 33:;
             /* keyboard */
             uint8_t scancode = inb(0x60);
+            process_keyboard(scancode);
+
+            if(is_key_pressed(KEY_LCTRL) && is_key_pressed(KEY_LALT) && is_key_pressed(KEY_DELETE1) && is_key_pressed(KEY_DELETE2)) {
+                kprintf(COL_CRI, "RECEIVED THREE-FINGER-SALUTE, REBOOTING");
+                reboot();
+            }
+
             if(scancode & (1<<7)) {
             } else {
                 uint8_t ascii = scancode_to_ascii(scancode & ~(1<<7));

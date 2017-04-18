@@ -41,3 +41,12 @@ void outw(uint16_t port, uint16_t data)
 {
     asm volatile("outw %0, %1" : : "a" (data), "Nd" (port));
 }
+
+void reboot()
+{
+    uint8_t good = 0x02;
+    while (good & 0x02)
+        good = inb(0x64);
+    outb(0x64, 0xFE);
+    asm volatile ("hlt");
+}

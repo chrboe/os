@@ -24,10 +24,6 @@ int discover_gpt(struct ata_device *dev)
 {
 	uint16_t data[256];
 	ata_read(data, dev, 1, 1);
-	kprintf(COL_NOR, "info about device:\r\n");
-	kprintf(COL_NOR, "revision: %d\r\n", get_revision(data));
-	kprintf(COL_NOR, "header size: %d\r\n", get_header_size(data));
-	kprintf(COL_NOR, "CRC32: 0x%x\r\n", get_crc32(data));
 	
 	if(check_signature(data)) {
 		return ERR_OK;

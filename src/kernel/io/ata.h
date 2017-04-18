@@ -26,7 +26,7 @@
 #define ATA_READ_MASTER 0xE0
 #define ATA_READ_SLAVE 0xF0
 
-int ata_init();
+int ata_init(struct ata_device *devices[2]);
 int ata_read(uint16_t* dst, struct ata_device *dev, uint32_t lba, uint8_t count);
 int ata_write(uint16_t* src, struct ata_device *dev, uint32_t lba, uint8_t count);
 
