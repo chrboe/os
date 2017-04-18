@@ -39,6 +39,10 @@ struct stackframe
     uint32_t ss;
 };
 
+void disable_nmi();
+void enable_nmi();
+uint8_t is_nmi_disabled();
+
 void dump_frame(struct stackframe* frame);
 
 void interrupt_stub_0();

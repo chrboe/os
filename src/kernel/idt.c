@@ -135,6 +135,26 @@ void pic_send_eoi(uint8_t irq)
     }
 }
 
+
+static uint8_t nmi_disable_bit = 0;
+
+void enable_nmi()
+{
+    nmi_disable_bit = 0;
+    outb(0x70, nmi_disable_bit<<7);
+}
+
+void disable_nmi()
+{
+    nmi_disable_bit = 1;
+    outb(0x70, nmi_disable_bit<<7);
+}
+
+uint8_t is_nmi_disabled()
+{
+    return nmi_disable_bit;
+}
+
 static void handle_exception(struct stackframe* frame)
 {
 	//TODO: this doesn't always print (wtf?)
