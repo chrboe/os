@@ -42,6 +42,6 @@ struct multiboot_module {
 #include "io/uart.h" /* for uart_init */
 #include "time.h"
 #include "pit.h"
-//#include "fs/fsfs.h" /* for fsfs_load */
+#include "mmu.h"
 
 #endif /* !INIT_H */

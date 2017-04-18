@@ -157,7 +157,6 @@ uint8_t is_nmi_disabled()
 
 static void handle_exception(struct stackframe* frame)
 {
-	//TODO: this doesn't always print (wtf?)
     kprintf(COL_ERR, "The following exception just occoured:\r\n");
     switch(frame->interrupt) {
         case 0:
@@ -165,6 +164,9 @@ static void handle_exception(struct stackframe* frame)
             break;
         case 13:
             kprintf(COL_CRI, "General Protection Fault");
+            break;
+        case 14:
+            kprintf(COL_CRI, "Page Fault");
             break;
         default:
             kprintf(COL_CRI, "(Unknown)");

@@ -45,6 +45,17 @@ void init(struct multiboot_structure* mb_struc)
     pmm_init(mb_struc);
     kprintf(COL_SUC, "OK\r\n");
 
+
+    kputs(COL_NOR, "Enabling Paging... ");
+    uint32_t paging_stat = init_paging();
+    if(paging_stat == ERR_OK) {
+        kprintf(COL_SUC, "OK\r\n");
+    } else {
+        kprintf(COL_CRI, "ERROR\r\n");
+    }
+
+    while(1);
+
 	kprintf(COL_NOR, "Initializing ATA interface... ");
 	struct ata_device *devices[2];
 	devices[0] = pmm_alloc();
