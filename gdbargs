@@ -1,2 +1,0 @@
-symbol-file build/src/kernel/kernel
-target remote localhost:1234

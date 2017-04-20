@@ -1,6 +1,12 @@
 #include "pmm.h"
 
+/*
+ * bitmap of all pages
+ * 1: free
+ * 0: reserved / allocated
+ */
 static uint32_t page_free_bits[NUM_PAGES];
+
 extern const void kernel_start;
 extern const void kernel_end;
 
@@ -15,7 +21,7 @@ void* pmm_alloc()
             }
         }
     }
-    uart_puts("malloc 0\r\n");
+    uart_puts("MALLOC 0!!!\r\n");
     return 0;
 }
 
@@ -59,12 +65,12 @@ void pmm_init(struct multiboot_structure* mb_struc)
 
     /* free everything that should be freed according to the BIOS */
     while(mmap < mmap_end) {
-        uart_printf("type %d\r\n", mmap->type);
         if(mmap->type == 1) {
             /* mem is free */
             uintptr_t base = (uintptr_t)mmap->baseaddr;
             uintptr_t end = (uintptr_t)(base + mmap->length);
 
+            uart_printf("free memory from %x to %x\r\n", base, end);
             while(base < end) {
                 pmm_free((void*)base);
                 base += 0x1000;
@@ -73,6 +79,8 @@ void pmm_init(struct multiboot_structure* mb_struc)
         mmap++;
     }
 
+    uart_printf("mark used from %x to %x\r\n", (uintptr_t)&kernel_start, (uintptr_t)&kernel_end);
+
     /* mark the kernel as used again */
     uintptr_t kern_base = (uintptr_t)&kernel_start;
     while(kern_base < (uintptr_t)&kernel_end) {
@@ -80,9 +88,17 @@ void pmm_init(struct multiboot_structure* mb_struc)
         kern_base += 0x1000;
     }
 
+    uart_printf("mark used from 0 to %x\r\n", 1024 * 4096);
+    /* also mark the first 4MB */
+    for(int i = 0; i < 1024; i++) {
+        pmm_mark_used((void *)(i * 4096));
+    }
+
     /* reserve the multiboot structure aswell as the module list */
     struct multiboot_module* modules = mb_struc->mods_addr;
+    uart_printf("mark used %x\r\n", mb_struc);
     pmm_mark_used(mb_struc);
+    uart_printf("mark used %x\r\n", modules);
     pmm_mark_used(modules);
 
     /* now reserve the modules themselves */
@@ -90,6 +106,7 @@ void pmm_init(struct multiboot_structure* mb_struc)
     for (i = 0; i < mb_struc->mods_count; i++) {
         kern_base = modules[i].mod_start;
         while (kern_base < modules[i].mod_end) {
+            uart_printf("mark used %x\r\n", kern_base);
             pmm_mark_used((void*) kern_base);
             kern_base += 0x1000;
         }

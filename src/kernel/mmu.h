@@ -9,13 +9,17 @@
 #define PAGE_WRITE 0x2
 #define PAGE_USER 0x4
 
+#define KERNEL_PAGE_TABLES_VADDR 0x3fc00000
+#define PGDIR_SHIFT 22
+
 struct vmm_context {
     uint32_t *page_directory;
 };
 
-/* 0 for 4KiB pages, 1 for 4MiB */
-#define PAGING_PAGE_SIZE 0
-
+struct vmm_context *vmm_create_context();
+uintptr_t vmm_alloc_pages(struct vmm_context *context, uint32_t num_pages);
+uintptr_t vmm_alloc(struct vmm_context *context, uint32_t bytes);
+uint32_t vmm_map_page(struct vmm_context *context, uintptr_t virt, uintptr_t phys);
 uint32_t init_paging();
 
 #endif // MMU_H

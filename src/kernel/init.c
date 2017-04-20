@@ -54,6 +54,14 @@ void init(struct multiboot_structure* mb_struc)
         kprintf(COL_CRI, "ERROR\r\n");
     }
 
+    kputs(COL_NOR, "Testing Paging...\r\n");
+    uart_printf("create context\r\n");
+    dump_free_bits();
+    struct vmm_context *context = vmm_create_context();
+
+    uart_printf("TESTING NOW\r\n");
+    vmm_alloc(context, 4096);
+
     while(1);
 
 	kprintf(COL_NOR, "Initializing ATA interface... ");
