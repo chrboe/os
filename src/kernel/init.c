@@ -40,6 +40,8 @@ void init(struct multiboot_structure* mb_struc)
     } else {
         kputs(COL_CRI, "ERR\r\n");
     }
+    uart_printf("SERIAL");
+    while(1);
 
     kprintf(COL_NOR, "Initializing Physical Memory Manger... ");
     pmm_init(mb_struc);
@@ -56,8 +58,7 @@ void init(struct multiboot_structure* mb_struc)
 
     kputs(COL_NOR, "Testing Paging...\r\n");
     uart_printf("create context\r\n");
-    dump_free_bits();
-    struct vmm_context *context = vmm_create_context();
+    struct vmm_context *context = (struct vmm_context *)PAGE_TABLES_V;
 
     uart_printf("TESTING NOW\r\n");
     vmm_alloc(context, 4096);

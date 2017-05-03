@@ -5,7 +5,7 @@
  */
 void kputc(char color, char chr)
 {
-    char* vmem = (char*)0xb8000;
+    char* vmem = (char*)VIDMEM_ADDR;
     static int ypos = 0;
     static int xoffs = 0;
 
@@ -64,7 +64,7 @@ void kputi(char color, uint32_t num, int base)
 
 void kcls()
 {
-    char* vmem = (char*)0xb8000;
+    char* vmem = (char*)VIDMEM_ADDR;
     kmemset(vmem, 0, 4096);
 }
 

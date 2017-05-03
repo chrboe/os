@@ -1,8 +1,11 @@
-FILE(GLOB GENERIC_SRCS "*.c" "io/*.c")
+FILE(GLOB GENERIC_SRCS "*.[cS]")
+
+ADD_SUBDIRECTORY(io)
+ADD_SUBDIRECTORY(mm)
 
 # We could also use CMakeCache variables here!
 LOAD_PROFILE("i386" "pc")
-MESSAGE(STATUS ${PLATFORM_SRCS})
+MESSAGE(STATUS ${GENERIC_SRCS})
 
 # Now set up our environment
 ADD_EXECUTABLE(kernel ${PLATFORM_SRCS} ${ISA_SRCS} ${GENERIC_SRCS})

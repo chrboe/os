@@ -36,12 +36,12 @@ struct multiboot_module {
 #include "idt.h" /* for setup_idt */
 #include "keyboard.h" /* for init_keyboard */
 #include "task.h" /* for init_multitasking */
-#include "pmm.h" /* for pmm_init */
+#include "mm/pmm.h" /* for pmm_init */
 #include "io/ata.h" /* for init_ata */
 #include "io/gpt.h" /* for discover_gpt */
 #include "io/uart.h" /* for uart_init */
 #include "time.h"
 #include "pit.h"
-#include "mmu.h"
+#include "mm/paging.h"
 
 #endif /* !INIT_H */

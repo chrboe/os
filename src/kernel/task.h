@@ -3,7 +3,7 @@
 
 #include "console.h"
 #include "idt.h"
-#include "pmm.h"
+#include "mm/pmm.h"
 
 struct task {
 	struct stackframe* frame;

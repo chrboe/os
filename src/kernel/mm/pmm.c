@@ -5,7 +5,7 @@
  * 1: free
  * 0: reserved / allocated
  */
-static uint32_t page_free_bits[NUM_PAGES];
+extern uint32_t page_free_bits[NUM_PAGES];
 
 extern const void kernel_start;
 extern const void kernel_end;

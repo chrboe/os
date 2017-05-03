@@ -1,5 +1,5 @@
 /* define _start as the entry point for the kernel */
-ENTRY(_start)
+ENTRY(_loader)
 
 /*
  * this section of the file tells the linker where to put the different
@@ -13,34 +13,32 @@ SECTIONS
      * . defines the offset at which to start. because we want to load our
      * kernel to 0x100000, we set it to that.
      */
-    . = 0x100000;
+	. = 0xC0100000;
 
 	kernel_start = .;
 
     /*
      * this ensures that the multiboot header is first in the binary.
      */
-    .text : {
-        *(multiboot)
-        *(.text)
-    }
+	.text ALIGN (4K) : AT (ADDR (.text) - 0xC0000000)
+	{
+		*(.multiboot)
+		*(.text)
+	}
+	.rodata ALIGN (4K) : AT (ADDR (.rodata) - 0xC0000000)
+	{
+		*(.rodata)
+	}
+	.data ALIGN (4K) : AT (ADDR (.data) - 0xC0000000)
+	{
+		*(.data)
+	}
+	.bss ALIGN (4K) : AT (ADDR (.bss) - 0xC0000000)
+	{
+		*(COMMON)
+		*(.bss)
+		*(.bootstrap_stack)
+	}
 
-    /*
-     * all the other sections are after multiboot, the order doesn't 
-     * really matter here.
-     */
-    .data ALIGN(4096) : {
-        *(.data)
-    }
-
-    .rodata ALIGN(4096) : {
-        *(.rodata)
-    }
-
-    .bss ALIGN(4096) : {
-        *(.bss)
-    }
-
-	. = ALIGN(4096);
 	kernel_end = .;
 }
