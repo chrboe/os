@@ -1,150 +1,118 @@
-.section multiboot
-/*
- * these are the flags for the multiboot header.
- * multiboot is needed because GRUB demands it.
- * it is a standard for well-defining the state of a kernel
- * after the bootloader is done loading it.
- *
- * documentation: 
- * https://www.gnu.org/software/grub/manual/multiboot/multiboot.pdf
- */
-#define MB_MAGIC 0x1badb002
-#define MB_FLAGS 0x3
-#define MB_CHECKSUM -(MB_MAGIC + MB_FLAGS)
+# Declare constants for the multiboot header.
+.set ALIGN,    1<<0             # align loaded modules on page boundaries
+.set MEMINFO,  1<<1             # provide memory map
+.set FLAGS,    ALIGN | MEMINFO  # this is the Multiboot 'flag' field
+.set MAGIC,    0x1BADB002       # 'magic number' lets bootloader find the header
+.set CHECKSUM, -(MAGIC + FLAGS) # checksum of above, to prove we are multiboot
 
-/*
- * this part actually builds the multiboot header.
- */
+# Declare a multiboot header that marks the program as a kernel.
+.section .multiboot
 .align 4
-.int MB_MAGIC
-.int MB_FLAGS
-.int MB_CHECKSUM
+.long MAGIC
+.long FLAGS
+.long CHECKSUM
 
-#define KERNEL_VIRTUAL_BASE  0xC0000000
-#define KERNEL_PAGE_NUMBER   (KERNEL_VIRTUAL_BASE >> 22)
-
+# Allocate the initial stack.
 .section .bootstrap_stack, "aw", @nobits
 stack_bottom:
-.skip 16384
+.skip 16384 # 16 KiB
 stack_top:
 
+# Preallocate pages used for paging. Don't hard-code addresses and assume they
+# are available, as the bootloader might have loaded its multiboot structures or
+# modules there. This lets the bootloader know it must avoid the addresses.
 .section .bss, "aw", @nobits
 	.align 4096
 boot_pagedir:
 	.skip 4096
-boot_pagetable:
+boot_pagetable1:
 	.skip 4096
+# Further page tables may be required if the kernel grows beyond 3 MiB.
 
+# The kernel entry point.
 .section .text
-
-/*
- * this extern statement is needed because init is defined in init.c, not here.
- * (see below for usage of this function)
- */
-.extern init
-
-/*
- * this line defines the _start label as global.
- * this is needed in order for the linker to find it, as non-global
- * labels are only visible in the current file.
- * (this behaviour is similar to static/non-static functions in C)
- */
-.global _loader
-.type _loader, @function
-
-/*
- * this routine loads the kernel to the proper virtual address and
- * then jumps to the entry point
- */
-_loader:
-	movl $(boot_pagetable - 0xC0000000), %edi
+.global _start
+.type _start, @function
+_start:
+	# Physical address of boot_pagetab1.
+	# TODO: I recall seeing some assembly that used a macro to do the
+	#       conversions to and from physical. Maybe this should be done in this
+	#       code as well?
+	movl $(boot_pagetable1 - 0xC0000000), %edi
+	# First address to map is address 0.
+	# TODO: Start at the first kernel page instead. Alternatively map the first
+	#       1 MiB as it can be generally useful, and there's no need to
+	#       specially map the VGA buffer.
 	movl $0, %esi
+	# Map 1023 pages. The 1024th will be the VGA text buffer.
 	movl $1023, %ecx
+
 1:
-	/* Only map the kernel. */
+	# Only map the kernel.
 	cmpl $(kernel_start - 0xC0000000), %esi
 	jl 2f
 	cmpl $(kernel_end - 0xC0000000), %esi
 	jge 3f
 
-	/*
-	 * Map physical address as "present, writable". Note that this maps
-	 * .text and .rodata as writable. Mind security and map them as non-writable.
-	 */
+	# Map physical address as "present, writable". Note that this maps
+	# .text and .rodata as writable. Mind security and map them as non-writable.
 	movl %esi, %edx
 	orl $0x003, %edx
 	movl %edx, (%edi)
 
 2:
-	/* Size of page is 4096 bytes. */
+	# Size of page is 4096 bytes.
 	addl $4096, %esi
-	/* Size of entries in boot_pagetab1 is 4 bytes. */
+	# Size of entries in boot_pagetab1 is 4 bytes.
 	addl $4, %edi
-	/* Loop to the next entry if we haven't finished. */
+	# Loop to the next entry if we haven't finished.
 	loop 1b
 
 3:
-	/* Map VGA video memory to 0xC03FF000 as "present, writable". */
-	movl $(0x000B8000 | 0x003), boot_pagetable - 0xC0000000 + 1023 * 4
+	# Map VGA video memory to 0xC03FF000 as "present, writable".
+	movl $(0x000B8000 | 0x003), boot_pagetable1 - 0xC0000000 + 1023 * 4
 
-	/*
-	 * The page table is used at both page directory entry 0 (virtually from 0x0
-	 * to 0x3FFFFF) (thus identity mapping the kernel) and page directory entry
-	 * 768 (virtually from 0xC0000000 to 0xC03FFFFF) (thus mapping it in the
-	 * higher half). The kernel is identity mapped because enabling paging does
-	 * not change the next instruction, which continues to be physical. The CPU
-	 * would instead page fault if there was no identity mapping.
-	 */
+	# The page table is used at both page directory entry 0 (virtually from 0x0
+	# to 0x3FFFFF) (thus identity mapping the kernel) and page directory entry
+	# 768 (virtually from 0xC0000000 to 0xC03FFFFF) (thus mapping it in the
+	# higher half). The kernel is identity mapped because enabling paging does
+	# not change the next instruction, which continues to be physical. The CPU
+	# would instead page fault if there was no identity mapping.
 
-	/* Map the page table to both virtual addresses 0x00000000 and 0xC0000000. */
-	movl $(boot_pagetable - 0xC0000000 + 0x003), boot_pagedir - 0xC0000000 + 0
-	movl $(boot_pagetable - 0xC0000000 + 0x003), boot_pagedir - 0xC0000000 + 768 * 4
+	# Map the page table to both virtual addresses 0x00000000 and 0xC0000000.
+	movl $(boot_pagetable1 - 0xC0000000 + 0x003), boot_pagedir - 0xC0000000 + 0
+	movl $(boot_pagetable1 - 0xC0000000 + 0x003), boot_pagedir - 0xC0000000 + 768 * 4
 
-	/* Set cr3 to the address of the boot_page_directory. */
+	# Set cr3 to the address of the boot_page_directory.
 	movl $(boot_pagedir - 0xC0000000), %ecx
 	movl %ecx, %cr3
 
-	/* Enable paging and the write-protect bit. */
+	# Enable paging and the write-protect bit.
 	movl %cr0, %ecx
 	orl $0x80010000, %ecx
 	movl %ecx, %cr0
 
-	/* Jump to higher half with an absolute jump. */
-	lea _start, %ecx
+	# Jump to higher half with an absolute jump.
+	lea 4f, %ecx
 	jmp *%ecx
 
-/*
- * THIS IS OUR ACTUAL ENTRY POINT.
- * when GRUB hands control over to us, this gets executed.
- */
-_start:
-    /* unmap the bootstrapping identity page */
+4:
+	# At this point, paging is fully set up and enabled.
+
+	# Unmap the identity mapping as it is now unnecessary.
 	movl $0, boot_pagedir + 0
+
+	# Reload crc3 to force a TLB flush so the changes to take effect.
 	movl %cr3, %ecx
 	movl %ecx, %cr3
 
-	/*
-	 * first, we initialize our kernel stack (see below for definition) by
-	 * setting the stack pointer to its address.
-	 */
+	# Set up the stack.
 	mov $stack_top, %esp
 
-	/*
-	 * then, we call our init function, which is defined in init.c.
-	 */
-	add  $KERNEL_VIRTUAL_BASE, %ebx
-	push %ebx
+	# Enter the high-level kernel.
 	call init
 
-	/*
-	 * when (if) our init function returns, that means the OS has been halted.
-	 * therefore, we just turn off interrupts and send the processor into an
-	 * endless loop.
-	 * NOTE: the hlt statement causes the processor to only do work when it has
-	 * to (i.e. it suspends the CPU). this eliminates the problem of having
-	 * 100% CPU usage and extreme power consumption when the OS is done running.
-	 */
+	# Infinite loop if the system has nothing more to do.
 	cli
-_stop:
-	hlt
-	jmp _stop
+1:	hlt
+	jmp 1b

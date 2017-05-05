@@ -1,7 +1,8 @@
 #include "init.h"
 
-void init(struct multiboot_structure* mb_struc)
+void init(void)
 {
+    struct multiboot_structure* mb_struc;
     kcls();
 
     kprintf(COL_NOR, "Building GDT... ");
@@ -20,6 +21,7 @@ void init(struct multiboot_structure* mb_struc)
     setup_idt();
     kprintf(COL_SUC, "OK\r\n");
 
+    while(1);
     kprintf(COL_NOR, "Loading IDT... ");
     load_idt();
     kprintf(COL_SUC, "OK\r\n");

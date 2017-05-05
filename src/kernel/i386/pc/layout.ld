@@ -1,25 +1,13 @@
-/* define _start as the entry point for the kernel */
-ENTRY(_loader)
+ENTRY (_start)
 
-/*
- * this section of the file tells the linker where to put the different
- * sections in the binary.
- * this is important because the multiboot sector needs to be first
- * in the binary, and this order is normally not guaranteed.
- */
 SECTIONS
 {
-    /*
-     * . defines the offset at which to start. because we want to load our
-     * kernel to 0x100000, we set it to that.
-     */
+	/* The kernel will live at 3GB + 1MB in the virtual address space, */
+	/* which will be mapped to 1MB in the physical address space. */
+	/* Note that we page-align the sections. */
 	. = 0xC0100000;
-
+	/* Add a symbol that indicates the start address of the kernel. */
 	kernel_start = .;
-
-    /*
-     * this ensures that the multiboot header is first in the binary.
-     */
 	.text ALIGN (4K) : AT (ADDR (.text) - 0xC0000000)
 	{
 		*(.multiboot)
@@ -39,6 +27,6 @@ SECTIONS
 		*(.bss)
 		*(.bootstrap_stack)
 	}
-
+	/* Add a symbol that indicates the end address of the kernel. */
 	kernel_end = .;
 }

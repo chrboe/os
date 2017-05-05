@@ -7,3 +7,12 @@
 
 # log files
 **/*.log
+
+# vim swap files
+**/*.swp
+
+# CLion directory
+.idea/
+
+# CMake build direcory
+build/
