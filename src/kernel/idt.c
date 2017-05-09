@@ -155,18 +155,46 @@ uint8_t is_nmi_disabled()
     return nmi_disable_bit;
 }
 
+static void abort()
+{
+
+    kprintf(COL_CRI, "Aborting Kernel.");
+    while(1) {
+        asm volatile("cli; hlt");
+    }
+}
+
+static void handle_page_fault(struct stackframe *frame)
+{
+    kprintf(COL_CRI, "Page Fault!\r\n");
+    kprintf(COL_ERR, "Error: 0x%x\r\n", frame->error);
+    switch(frame->error & 0x7) {
+        case 0: kprintf(COL_NOR, "Supervisory process tried to read a non-present page entry\r\n"); break;
+        case 1: kprintf(COL_NOR, "Supervisory process tried to read a page and caused a protection fault\r\n"); break;
+        case 2: kprintf(COL_NOR, "Supervisory process tried to write to a non-present page entry\r\n"); break;
+        case 3: kprintf(COL_NOR, "Supervisory process tried to write a page and caused a protection fault\r\n"); break;
+        case 4: kprintf(COL_NOR, "User process tried to read a non-present page entry\r\n"); break;
+        case 5: kprintf(COL_NOR, "User process tried to read a page and caused a protection fault\r\n"); break;
+        case 6: kprintf(COL_NOR, "User process tried to write to a non-present page entry\r\n"); break;
+        case 7: kprintf(COL_NOR, "User process tried to write a page and caused a protection fault\r\n"); break;
+    }
+
+    abort();
+}
+
 static void handle_exception(struct stackframe* frame)
 {
-    kprintf(COL_ERR, "The following exception just occoured:\r\n");
+    if (frame->interrupt == 14) {
+        return handle_page_fault(frame);
+    }
+
+    kprintf(COL_ERR, "The following exception just occurred:\r\n");
     switch(frame->interrupt) {
         case 0:
             kprintf(COL_CRI, "Division by Zero");
             break;
         case 13:
             kprintf(COL_CRI, "General Protection Fault");
-            break;
-        case 14:
-            kprintf(COL_CRI, "Page Fault");
             break;
         default:
             kprintf(COL_CRI, "(Unknown)");
@@ -176,10 +204,7 @@ static void handle_exception(struct stackframe* frame)
 
 	dump_frame(frame);
 
-    kprintf(COL_ERR, "Aborting Kernel.");
-    while(1) {
-        asm volatile("cli; hlt");
-    }
+    abort();
 }
 
 static struct stackframe* handle_irq(struct stackframe* frame)

@@ -59,12 +59,10 @@ void init(struct multiboot_structure *mb_struc, uint32_t pagedir)
     uart_printf("TESTING NOW\r\n");
     uint32_t *test = vmm_alloc(&context, 4096);
 
-    for(int i = 0; i < 1024; i++) {
+    for(int i = 0; i < 1025; i++) {
         test[i] = i;
         uart_printf("RESULT: %d\r\n", test[i]);
     }
-
-
 
     while(1);
 
