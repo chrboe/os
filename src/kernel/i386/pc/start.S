@@ -8,9 +8,9 @@
 # Declare a multiboot header that marks the program as a kernel.
 .section .multiboot
 .align 4
-.long MAGIC
-.long FLAGS
-.long CHECKSUM
+.int MAGIC
+.int FLAGS
+.int CHECKSUM
 
 # Allocate the initial stack.
 .section .bootstrap_stack, "aw", @nobits
@@ -35,21 +35,14 @@ boot_pagetable1:
 .type _start, @function
 _start:
 	# Physical address of boot_pagetab1.
-	# TODO: I recall seeing some assembly that used a macro to do the
-	#       conversions to and from physical. Maybe this should be done in this
-	#       code as well?
 	movl $(boot_pagetable1 - 0xC0000000), %edi
 	# First address to map is address 0.
-	# TODO: Start at the first kernel page instead. Alternatively map the first
-	#       1 MiB as it can be generally useful, and there's no need to
-	#       specially map the VGA buffer.
 	movl $0, %esi
 	# Map 1023 pages. The 1024th will be the VGA text buffer.
 	movl $1023, %ecx
 
 1:
-	# Only map the kernel.
-	cmpl $(kernel_start - 0xC0000000), %esi
+	cmpl $0, %esi
 	jl 2f
 	cmpl $(kernel_end - 0xC0000000), %esi
 	jge 3f
@@ -72,6 +65,7 @@ _start:
 	# Map VGA video memory to 0xC03FF000 as "present, writable".
 	movl $(0x000B8000 | 0x003), boot_pagetable1 - 0xC0000000 + 1023 * 4
 
+
 	# The page table is used at both page directory entry 0 (virtually from 0x0
 	# to 0x3FFFFF) (thus identity mapping the kernel) and page directory entry
 	# 768 (virtually from 0xC0000000 to 0xC03FFFFF) (thus mapping it in the
@@ -86,6 +80,7 @@ _start:
 	# Set cr3 to the address of the boot_page_directory.
 	movl $(boot_pagedir - 0xC0000000), %ecx
 	movl %ecx, %cr3
+
 
 	# Enable paging and the write-protect bit.
 	movl %cr0, %ecx
@@ -108,6 +103,11 @@ _start:
 
 	# Set up the stack.
 	mov $stack_top, %esp
+
+    push $boot_pagedir
+
+    add $0xC0000000, %ebx
+    push %ebx
 
 	# Enter the high-level kernel.
 	call init

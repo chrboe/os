@@ -1,9 +1,13 @@
 #include "init.h"
 
-void init(void)
+void init(struct multiboot_structure *mb_struc, uint32_t pagedir)
 {
-    struct multiboot_structure* mb_struc;
     kcls();
+
+    kprintf(COL_NOR, "addr: %x %x\r\n", mb_struc, mb_struc->mmap_addr);
+    kprintf(COL_NOR, "pagedir: %x\r\n", pagedir);
+    mb_struc->mmap_addr += 0xC0000000;
+    mb_struc->mods_addr += 0xC0000000;
 
     kprintf(COL_NOR, "Building GDT... ");
     setup_gdt();
@@ -21,7 +25,6 @@ void init(void)
     setup_idt();
     kprintf(COL_SUC, "OK\r\n");
 
-    while(1);
     kprintf(COL_NOR, "Loading IDT... ");
     load_idt();
     kprintf(COL_SUC, "OK\r\n");
@@ -43,27 +46,25 @@ void init(void)
         kputs(COL_CRI, "ERR\r\n");
     }
     uart_printf("SERIAL");
-    while(1);
 
     kprintf(COL_NOR, "Initializing Physical Memory Manger... ");
     pmm_init(mb_struc);
     kprintf(COL_SUC, "OK\r\n");
 
-
-    kputs(COL_NOR, "Enabling Paging... ");
-    uint32_t paging_stat = init_paging();
-    if(paging_stat == ERR_OK) {
-        kprintf(COL_SUC, "OK\r\n");
-    } else {
-        kprintf(COL_CRI, "ERROR\r\n");
-    }
-
     kputs(COL_NOR, "Testing Paging...\r\n");
     uart_printf("create context\r\n");
-    struct vmm_context *context = (struct vmm_context *)PAGE_TABLES_V;
+    struct vmm_context context;
+    context.page_directory = pagedir;
 
     uart_printf("TESTING NOW\r\n");
-    vmm_alloc(context, 4096);
+    uint32_t *test = vmm_alloc(&context, 4096);
+
+    for(int i = 0; i < 1024; i++) {
+        test[i] = i;
+        uart_printf("RESULT: %d\r\n", test[i]);
+    }
+
+
 
     while(1);
 

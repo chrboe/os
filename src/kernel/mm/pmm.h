@@ -9,8 +9,8 @@
 
 uint32_t page_free_bits[NUM_PAGES];
 
-void* pmm_alloc();
-void pmm_free(void*);
+uintptr_t pmm_alloc();
+void pmm_free(uintptr_t);
 void pmm_init(struct multiboot_structure*);
 
 #endif /* !PMM_H */

@@ -53,7 +53,6 @@ void setup_idt()
     idt[45] = build_idt_entry(interrupt_stub_45, 8, 0x80 | 0x00 | 0xe);
     idt[46] = build_idt_entry(interrupt_stub_46, 8, 0x80 | 0x00 | 0xe);
     idt[47] = build_idt_entry(interrupt_stub_47, 8, 0x80 | 0x00 | 0xe);
-    while(1);
 
     idt[48] = build_idt_entry(interrupt_stub_48, 8, 0x80 | 0x60 | 0xe);
 }
@@ -185,7 +184,6 @@ static void handle_exception(struct stackframe* frame)
 
 static struct stackframe* handle_irq(struct stackframe* frame)
 {
-    kputs(COL_NOR, "INTR");
     struct stackframe* new_frame = frame;
     switch(frame->interrupt) {
         case 32:

@@ -1,2 +1,0 @@
-SET(ISA_C_FLAGS "-Wall -g")
-SET(ISA_LINKER_FLAGS "-melf_i386")

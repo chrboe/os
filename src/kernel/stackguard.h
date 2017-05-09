@@ -1,3 +1,4 @@
+#if 0
 #ifndef STACKGUARD_H
 #define STACKGUARD_H
 
@@ -14,3 +15,4 @@
 __attribute__((noreturn)) void __stack_chk_fail(void);
 
 #endif // STACKGUARD_H
+#endif

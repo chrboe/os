@@ -23,6 +23,13 @@ static void blank_directory(uint32_t *pagedir)
     }
 }
 
+static void blank_table(uint32_t *table)
+{
+    for(int i = 0; i < 1024; i++) {
+        table[i] = 0;
+    }
+}
+
 struct vmm_context *vmm_create_context()
 {
     uart_printf("before malloc\r\n");
@@ -39,46 +46,101 @@ struct vmm_context *vmm_create_context()
 
 uintptr_t vmm_map_consecutive(struct vmm_context *context, physaddr_t start, uint32_t num)
 {
+    uart_printf("vmm_map_consecutive start: %x, num: %x", start, num);
     for (int i = 0; i < num; i++) {
         physaddr_t phys = (physaddr_t)pmm_alloc();
         //TODO add error checking (out of memory)
-        vmm_map_page(context, start + num * 4096, phys);
+        vmm_map_page(context, start + i * 4096, phys);
     }
 
     return start;
 }
 
-uintptr_t vmm_find_free_area(struct vmm_context *context, uint32_t num_pages)
+void* vmm_find_free_area(struct vmm_context *context, uintptr_t minimum, uintptr_t maximum, uint32_t num_pages)
 {
-    uart_printf("read pd at %x\r\n", context);
+    uart_printf("[find] read pd at %x\r\n", context);
     uint32_t *pd = context->page_directory;
 
+    uart_printf("[find] pd=%x\r\n", pd);
+
     int consecutive = 0;
-    uintptr_t first_consecutive = 0;
-    for(int i = 0; i < 1024; i++) {
-        uart_printf("pd[%d]\r\n", i);
-        if (pd[i] & PAGE_PRESENT) {
-            consecutive++;
+    virtaddr_t first_consecutive = 0;
 
-            if (first_consecutive == 0) {
-                first_consecutive = pd[i];
-            }
+    /* don't map NULL page */
+    if (minimum == 0) {
+        minimum = 0x1000;
+    }
 
-            if (consecutive >= num_pages) {
-                return first_consecutive;
+    uart_printf("[find] minimum = %x (%d)\r\n", minimum, (minimum >> 12) / 1024);
+    uart_printf("[find] maximum = %x (%d)\r\n", maximum, (maximum >> 12) /1024);
+    for(int j = (minimum >> 12) / 1024; j < 1024 && j < (maximum >> 12) / 1024; j++) {
+        uart_printf("[find] pd[%d] (%x)\r\n", j, pd[j]);
+        if (pd[j] & PAGE_PRESENT) {
+            uart_printf("[find] page present\r\n");
+            uint32_t *current_pt = 0xC0000000 + clear_flags(pd[j]);
+            uart_printf("[find] current pt: %x\r\n", current_pt);
+            for(int i = 0; i < 1024; i++) {
+                uart_printf("[find] pt[%d] (%x)\r\n", i, current_pt[i]);
+                if (current_pt[i] & PAGE_PRESENT) {
+                    uart_printf("[find] pt[%d] is present, resetting\r\n", i);
+                    consecutive = 0;
+                    first_consecutive = 0;
+                } else {
+                    uart_printf("[find] pt[%d] is not present\r\n", i);
+                    consecutive++;
+
+                    if (first_consecutive == 0) {
+                        uart_printf("[find] pt: first_consecutive: %x ->", first_consecutive);
+                        first_consecutive = ((j * 1024 * 4096) + (i * 4096));
+                        uart_printf(" %x\r\n", first_consecutive);
+                        uart_printf("i: %d, j: %d", i, j);
+                    }
+
+
+                    if (consecutive >= num_pages) {
+                        uart_printf("[find] return %x\r\n", first_consecutive);
+                        return first_consecutive;
+                    }
+                }
             }
         } else {
-            consecutive = 0;
-            first_consecutive = 0;
+            if (first_consecutive == 0) {
+                uart_printf("[find] pd: first_consecutive: %x ->", first_consecutive);
+                first_consecutive = (j << 12);
+                uart_printf(" %x\r\n", first_consecutive);
+            }
+            consecutive += 1024;
+        }
+
+        if (consecutive >= num_pages) {
+            uart_printf("[find] return %x\r\n", first_consecutive);
+            return first_consecutive;
         }
     }
+
     return 0;
 }
 
-uintptr_t vmm_alloc_pages(struct vmm_context *context, uint32_t num_pages)
+void* vmm_alloc_pages(struct vmm_context *context, uint32_t num_pages)
 {
+
+    asm("cli");
+    uart_printf("\r\n\r\nPD DUMP!\r\n");
+    for(int i = 0; i < 1024; i++) {
+        uart_printf("%x (%d)\t(%x)\t=\t%x\r\n", context->page_directory+i, i, i * 0x400000, context->page_directory[i]);
+    }
+
+
+    uart_printf("\r\n\r\nPT DUMP!\r\n");
+    uint32_t *pt = 0xC0000000 + (clear_flags(context->page_directory[768]));
+    for(int i = 0; i < 1024; i++) {
+        uart_printf("%x (%d)\t(%x)\t=\t%x\r\n", pt+i, i, 0xC0000000 + i * 1024, pt[i]);
+    }
+
+    asm("sti");
+
     uart_printf("allocating %x pages\r\n", num_pages);
-    uintptr_t virt = vmm_find_free_area(context, num_pages);
+    uintptr_t virt = vmm_find_free_area(context, 0xC0000000, 0xFFFFFFFF, num_pages);
     uart_printf("found free area at %x\r\n", virt);
 
     if(virt == 0) {
@@ -90,7 +152,7 @@ uintptr_t vmm_alloc_pages(struct vmm_context *context, uint32_t num_pages)
     return virt;
 }
 
-uintptr_t vmm_alloc(struct vmm_context *context, uint32_t size)
+void* vmm_alloc(struct vmm_context *context, uint32_t size)
 {
     uint32_t num_pages = (size-1)/ 4096 + 1;
     return vmm_alloc_pages(context, num_pages);
@@ -98,72 +160,49 @@ uintptr_t vmm_alloc(struct vmm_context *context, uint32_t size)
 
 static struct vmm_context *kernel_context;
 
-
-static inline uint32_t clear_flags(uint32_t entry)
-{
-    return entry & ~0xFFF;
-}
-
-static inline void table_put(uint32_t *table, uint32_t index, uint32_t entry, uint32_t flags)
-{
-    table[index] = clear_flags(entry) | flags;
-}
-
-static inline void directory_put(struct vmm_context *context, uint32_t index, uint32_t table, uint32_t flags)
-{
-    context->page_directory[index] = clear_flags(table) | flags;
-}
-
-static inline void invalidate_tlb(virtaddr_t addr)
-{
-    asm volatile("invlpg %0" : : "m" (*(char *)addr));
-}
-
-/* TODO */
-virtaddr_t vmm_get_virtual(struct vmm_context *context, physaddr_t physical)
-{
-    return 0;
-}
-
 uint32_t vmm_map_page(struct vmm_context *context, virtaddr_t virt, uintptr_t phys)
 {
+    uart_printf("vmm_map_page: %x -> %x\r\n", phys, virt);
     uint32_t page_number = (uint32_t)virt / 4096;
     uint32_t pd_index = page_number / 1024;
     uint32_t pt_index = page_number % 1024;
 
     uart_printf("pagenum %x pd_index %x pt_index %x\r\n", page_number, pd_index, pt_index);
-    uint32_t *page_table;
+    physaddr_t page_table;
 
-    /* check if page is already present */
+    /* check if page table is already present */
     if (context->page_directory[pd_index] & PAGE_PRESENT) {
-        uart_puts("present\r\n");
-        page_table = (uint32_t*) clear_flags(context->page_directory[pd_index]);
+        uart_printf("present: %x\r\n", context->page_directory[pd_index]);
+        page_table = clear_flags(context->page_directory[pd_index]);
     } else {
         uart_puts("not present\r\n");
         /* if not, allocate it */
-        if (page_tables_physical) {
-            page_table = pmm_alloc();
-        } else {
-            physaddr_t pt_phys = (physaddr_t)pmm_alloc();
-            page_table = vmm_get_virtual(context, pt_phys);
-        }
+        page_table = pmm_alloc();
         uart_puts("after malloc\r\n");
 
         directory_put(context, pd_index, (uint32_t)page_table, PAGE_PRESENT | PAGE_WRITE);
+        invalidate_tlb(context->page_directory);
+        uart_puts("after directory_put\r\n");
     }
 
-    blank_directory(page_table);
-    uart_puts("after blank\r\n");
+    virtaddr_t page_table_virt = 0xC0000000 + clear_flags(page_table);
 
-    table_put(page_table, pt_index, phys, PAGE_PRESENT | PAGE_WRITE);
+    blank_directory(page_table_virt);
+    uart_printf("page_table_virt = %x\r\n", page_table_virt);
 
+    table_put(page_table_virt, pt_index, phys, PAGE_PRESENT | PAGE_WRITE);
+
+    uart_puts("after table_put\r\n");
     /* invalidate tlb cache */
-    invalidate_tlb(page_table);
+    invalidate_tlb(page_table_virt);
+
+
+    uart_puts("after invalidate\r\n");
 
     return ERR_OK;
 }
 
-
+#if 0
 uint32_t init_paging()
 {
     kernel_context = vmm_create_context();
@@ -191,3 +230,4 @@ uint32_t init_paging()
 
     return ERR_OK;
 }
+#endif

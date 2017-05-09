@@ -10,14 +10,14 @@ extern uint32_t page_free_bits[NUM_PAGES];
 extern const void kernel_start;
 extern const void kernel_end;
 
-void* pmm_alloc()
+uintptr_t pmm_alloc()
 {
     for(int i = 0; i < NUM_PAGES; i++) {
         for(int j = 0; j < 32; j++) {
             if(page_free_bits[i] & 1<<j) {
                 page_free_bits[i] &= ~(1 << j);
                 uart_printf("malloc %x\r\n", ((i * 32 + j) * 4096));
-                return (void*)((i * 32 + j) * 4096);
+                return (i * 32 + j) * 4096;
             }
         }
     }
@@ -25,7 +25,7 @@ void* pmm_alloc()
     return 0;
 }
 
-void pmm_free(void* p)
+void pmm_free(uintptr_t p)
 {
     uintptr_t i = (uintptr_t) p / 4096;
     page_free_bits[i / 32] |= (1 << (i % 32));
@@ -79,11 +79,11 @@ void pmm_init(struct multiboot_structure* mb_struc)
         mmap++;
     }
 
-    uart_printf("mark used from %x to %x\r\n", (uintptr_t)&kernel_start, (uintptr_t)&kernel_end);
+    uart_printf("mark used from %x to %x\r\n", (uintptr_t)&kernel_start-KERNEL_BASE_V, (uintptr_t)&kernel_end-KERNEL_BASE_V);
 
     /* mark the kernel as used again */
-    uintptr_t kern_base = (uintptr_t)&kernel_start;
-    while(kern_base < (uintptr_t)&kernel_end) {
+    uintptr_t kern_base = (uintptr_t)&kernel_start-KERNEL_BASE_V;
+    while(kern_base < (uintptr_t)&kernel_end-KERNEL_BASE_V) {
         pmm_mark_used((void *)kern_base);
         kern_base += 0x1000;
     }
@@ -96,8 +96,8 @@ void pmm_init(struct multiboot_structure* mb_struc)
 
     /* reserve the multiboot structure aswell as the module list */
     struct multiboot_module* modules = mb_struc->mods_addr;
-    uart_printf("mark used %x\r\n", mb_struc);
-    pmm_mark_used(mb_struc);
+    uart_printf("mark used %x\r\n", mb_struc-KERNEL_BASE_V);
+    pmm_mark_used(mb_struc-KERNEL_BASE_V);
     uart_printf("mark used %x\r\n", modules);
     pmm_mark_used(modules);
 
@@ -111,5 +111,6 @@ void pmm_init(struct multiboot_structure* mb_struc)
             kern_base += 0x1000;
         }
     }
-    uart_printf("kernel base %x\r\nkernel end %x\r\n", kern_base, (uintptr_t)&kernel_end);
+
+    dump_free_bits();
 }
