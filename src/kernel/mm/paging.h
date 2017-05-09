@@ -18,16 +18,6 @@ struct vmm_context {
     uint32_t *page_directory;
 };
 
-struct page_directory {
-
-} __attribute__ ((packed));
-
-struct page_table {
-
-} __attribute__ ((packed));
-
-
-
 static inline uint32_t clear_flags(uint32_t entry)
 {
     return entry & ~0xFFF;
@@ -40,7 +30,6 @@ static inline void table_put(uint32_t *table, uint32_t index, uint32_t entry, ui
 
 static inline void directory_put(struct vmm_context *context, uint32_t index, uint32_t table, uint32_t flags)
 {
-    uart_printf("directory put %x to %x (index %d)", table, context->page_directory + index, index);
     context->page_directory[index] = clear_flags(table) | flags;
 }
 
@@ -53,7 +42,14 @@ static inline void invalidate_tlb(virtaddr_t addr)
 struct vmm_context *vmm_create_context();
 void* vmm_alloc_pages(struct vmm_context *context, uint32_t num_pages);
 void* vmm_alloc(struct vmm_context *context, uint32_t bytes);
+void* vmm_kalloc_pages(uint32_t num_pages);
+void* vmm_kalloc(uint32_t bytes);
+void  vmm_free(virtaddr_t addr);
 uint32_t vmm_map_page(struct vmm_context *context, virtaddr_t virt, physaddr_t phys);
-uint32_t init_paging();
+uint32_t vmm_init(uint32_t *kernel_pagedir);
+physaddr_t vmm_uresolve(struct vmm_context *context, virtaddr_t addr);
+physaddr_t vmm_kresolve(virtaddr_t addr);
+physaddr_t vmm_resolve(struct vmm_context *context, uintptr_t minimum, uintptr_t maximum, virtaddr_t addr);
+void* vmm_find_free_area(struct vmm_context *context, uintptr_t minimum, uintptr_t maximum, uint32_t num_pages);
 
 #endif // PAGING_H

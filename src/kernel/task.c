@@ -42,8 +42,8 @@ void task_d()
 
 struct task* init_task(void* func)
 {
-    uint8_t* stack = pmm_alloc();
-    uint8_t* user_stack = pmm_alloc();
+    uint8_t* stack = vmm_kalloc_pages(1);
+    uint8_t* user_stack = vmm_kalloc_pages(1);
 
     /*
      * CPU-Zustand fuer den neuen Task festlegen
@@ -79,9 +79,11 @@ struct task* init_task(void* func)
     /*
      * Neue Taskstruktur anlegen und in die Liste einhaengen
      */
-    struct task* task = pmm_alloc();
+    struct task *task = vmm_kalloc_pages(1);
     task->frame = frame;
     task->next = first_task;
+    uart_printf("allocating context\r\n");
+    task->context = vmm_create_context();
     first_task = task;
 
     uart_printf("task: 0x%x\r\nfirst: 0x%x\r\ncurrent: 0x%x\r\n", task, first_task, current_task);
@@ -95,6 +97,8 @@ void init_multitasking()
     init_task(task_b);
     init_task(task_c);
     init_task(task_d);
+    uart_printf("TASK INIT DONE");
+    while(1);
     asm("sti");
 }
 
@@ -102,6 +106,8 @@ struct stackframe* schedule(struct stackframe* frame)
 {
     uart_puts("schedule\r\n");
     uart_printf("first: 0x%x\r\ncurrent: 0x%x\r\n", first_task, current_task);
+    struct task *orig_task = current_task;
+
     if(first_task == 0) {
         /* we have no tasks */
         //kputs(COL_NOR, "no tasks\r\n");
@@ -129,6 +135,16 @@ struct stackframe* schedule(struct stackframe* frame)
     }
 
     uart_printf("chose %x\r\n", current_task);
+
+    /* switch context if necessary */
+    if (orig_task != current_task && current_task != 0) {
+        uart_printf("context switch\r\n");
+        uart_printf("current context = %x\r\n", current_task->context);
+        uart_printf("pagedir = %x\r\n", current_task->context->page_directory);
+        physaddr_t pagedir_phys = vmm_kresolve(current_task->context->page_directory);
+        uart_printf("pagedir_phys = %x\r\n", pagedir_phys);
+        asm volatile("mov %0, %%cr3" : : "r" (current_task->context->page_directory));
+    }
 
     //frame = current_task->frame;
     return current_task->frame;

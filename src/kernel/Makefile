@@ -3,8 +3,7 @@ TARGET_DIR = ${OBJ_DIRECTORY}/kernel
 OBJFILES := $(patsubst %.c,${TARGET_DIR}/%.o,${SRCFILES})
 LD_SCRIPT = $(abspath i386/pc/layout.ld)
 LD_OBJS := $(shell find ${TARGET_DIR} -type f -name "*.o")
-TARGET = ${BUILD_DIRECTORY}/kernel
-SUBDIRS = mm io i386
+SUBDIRS := mm io i386
 
 # include directories
 INCLUDES = $(abspath .)
@@ -26,7 +25,7 @@ export LDFLAGS = -nostdlib -lgcc
 
 all: ${SUBDIRS} ${OBJFILES}
 	@echo -e "${COLOR_LD}LD\t${TARGET}${COLOR_NO}"
-	${LD} ${LDFLAGS} ${LD_OBJS} -T ${LD_SCRIPT} -o ${TARGET}
+	@${LD} ${LDFLAGS} ${LD_OBJS} -T ${LD_SCRIPT} -o ${TARGET}
 
 ${TARGET_DIR}:
 	mkdir -p ${TARGET_DIR}
@@ -37,5 +36,4 @@ ${TARGET_DIR}/%.o: %.c ${TARGET_DIR}
 
 .PHONY: ${SUBDIRS}
 ${SUBDIRS}:
-	@echo -e "${COLOR_SD}Building subdirectory $@${COLOR_NO}"
 	@${MAKE} -C $@

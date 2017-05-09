@@ -84,6 +84,7 @@ void interrupt_stub_47();
 
 void interrupt_stub_48();
 
+void panic(const char *msg);
 void pic_remap_irqs(int num);
 void pic_apply_irq_mask(uint16_t mask);
 void setup_idt();

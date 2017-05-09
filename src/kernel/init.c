@@ -1,11 +1,11 @@
 #include "init.h"
 
-void init(struct multiboot_structure *mb_struc, uint32_t pagedir)
+void init(struct multiboot_structure *mb_struc, uint32_t *pagedir)
 {
     kcls();
 
-    kprintf(COL_NOR, "addr: %x %x\r\n", mb_struc, mb_struc->mmap_addr);
-    kprintf(COL_NOR, "pagedir: %x\r\n", pagedir);
+    uart_printf("addr: %x %x\r\n", mb_struc, mb_struc->mmap_addr);
+    uart_printf("pagedir: %x\r\n", pagedir);
     mb_struc->mmap_addr += 0xC0000000;
     mb_struc->mods_addr += 0xC0000000;
 
@@ -51,25 +51,15 @@ void init(struct multiboot_structure *mb_struc, uint32_t pagedir)
     pmm_init(mb_struc);
     kprintf(COL_SUC, "OK\r\n");
 
-    kputs(COL_NOR, "Testing Paging...\r\n");
-    uart_printf("create context\r\n");
-    struct vmm_context context;
-    context.page_directory = pagedir;
+    kprintf(COL_NOR, "Initializing Virtual Memory Manger... ");
+    vmm_init(pagedir);
+    kprintf(COL_SUC, "OK\r\n");
 
-    uart_printf("TESTING NOW\r\n");
-    uint32_t *test = vmm_alloc(&context, 4096);
-
-    for(int i = 0; i < 1025; i++) {
-        test[i] = i;
-        uart_printf("RESULT: %d\r\n", test[i]);
-    }
-
-    while(1);
 
 	kprintf(COL_NOR, "Initializing ATA interface... ");
 	struct ata_device *devices[2];
-	devices[0] = pmm_alloc();
-	devices[1] = pmm_alloc();
+	devices[0] = vmm_kalloc_pages(1);
+	devices[1] = vmm_kalloc_pages(1);
 
 	int ata_init_stat = ata_init(devices);
 	if(ata_init_stat == ERR_OK) {
@@ -141,8 +131,8 @@ void init(struct multiboot_structure *mb_struc, uint32_t pagedir)
     kprintf(COL_NOR, "first lba: %d\r\n", COMBINE16TO64(array[19], array[18], array[17], array[16]));
     kprintf(COL_NOR, "last lba: %d\r\n", COMBINE16TO64(array[23], array[22], array[21], array[20]));*/
 
-    pmm_free(devices[0]);
-    pmm_free(devices[1]);
+    vmm_free(devices[0]);
+    vmm_free(devices[1]);
 
     struct datetime time;
     get_time(&time);

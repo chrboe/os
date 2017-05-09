@@ -1,4 +1,4 @@
-KERNEL_DIRECTORY = kernel
+KERNEL_DIRECTORY := kernel
 
 all: kernel
 

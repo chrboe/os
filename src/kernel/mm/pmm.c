@@ -34,7 +34,7 @@ void pmm_free(uintptr_t p)
 void pmm_mark_used(void *p)
 {
     uintptr_t i = (uintptr_t) p / 4096;
-    uart_printf("mark used %x (i=%d, i/32=%d)\r\n", p, i, i/32);
+    //uart_printf("mark used %x (i=%d, i/32=%d)\r\n", p, i, i/32);
     page_free_bits[i / 32] &= ~(1 << (i % 32));
 }
 
@@ -72,14 +72,14 @@ void pmm_init(struct multiboot_structure* mb_struc)
 
             uart_printf("free memory from %x to %x\r\n", base, end);
             while(base < end) {
-                pmm_free((void*)base);
+                pmm_free(base);
                 base += 0x1000;
             }
         }
         mmap++;
     }
 
-    uart_printf("mark used from %x to %x\r\n", (uintptr_t)&kernel_start-KERNEL_BASE_V, (uintptr_t)&kernel_end-KERNEL_BASE_V);
+    //uart_printf("mark used from %x to %x\r\n", (uintptr_t)&kernel_start-KERNEL_BASE_V, (uintptr_t)&kernel_end-KERNEL_BASE_V);
 
     /* mark the kernel as used again */
     uintptr_t kern_base = (uintptr_t)&kernel_start-KERNEL_BASE_V;
@@ -88,7 +88,7 @@ void pmm_init(struct multiboot_structure* mb_struc)
         kern_base += 0x1000;
     }
 
-    uart_printf("mark used from 0 to %x\r\n", 1024 * 4096);
+    //uart_printf("mark used from 0 to %x\r\n", 1024 * 4096);
     /* also mark the first 4MB */
     for(int i = 0; i < 1024; i++) {
         pmm_mark_used((void *)(i * 4096));
@@ -96,9 +96,9 @@ void pmm_init(struct multiboot_structure* mb_struc)
 
     /* reserve the multiboot structure aswell as the module list */
     struct multiboot_module* modules = mb_struc->mods_addr;
-    uart_printf("mark used %x\r\n", mb_struc-KERNEL_BASE_V);
+    //uart_printf("mark used %x\r\n", mb_struc-KERNEL_BASE_V);
     pmm_mark_used(mb_struc-KERNEL_BASE_V);
-    uart_printf("mark used %x\r\n", modules);
+    //uart_printf("mark used %x\r\n", modules);
     pmm_mark_used(modules);
 
     /* now reserve the modules themselves */
@@ -106,11 +106,9 @@ void pmm_init(struct multiboot_structure* mb_struc)
     for (i = 0; i < mb_struc->mods_count; i++) {
         kern_base = modules[i].mod_start;
         while (kern_base < modules[i].mod_end) {
-            uart_printf("mark used %x\r\n", kern_base);
+            //uart_printf("mark used %x\r\n", kern_base);
             pmm_mark_used((void*) kern_base);
             kern_base += 0x1000;
         }
     }
-
-    dump_free_bits();
 }

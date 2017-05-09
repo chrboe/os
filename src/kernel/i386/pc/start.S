@@ -23,11 +23,12 @@ stack_top:
 # modules there. This lets the bootloader know it must avoid the addresses.
 .section .bss, "aw", @nobits
 	.align 4096
-boot_pagedir:
+kernel_pagedir:
 	.skip 4096
 boot_pagetable1:
 	.skip 4096
 # Further page tables may be required if the kernel grows beyond 3 MiB.
+
 
 # The kernel entry point.
 .section .text
@@ -74,11 +75,11 @@ _start:
 	# would instead page fault if there was no identity mapping.
 
 	# Map the page table to both virtual addresses 0x00000000 and 0xC0000000.
-	movl $(boot_pagetable1 - 0xC0000000 + 0x003), boot_pagedir - 0xC0000000 + 0
-	movl $(boot_pagetable1 - 0xC0000000 + 0x003), boot_pagedir - 0xC0000000 + 768 * 4
+	movl $(boot_pagetable1 - 0xC0000000 + 0x003), kernel_pagedir - 0xC0000000 + 0
+	movl $(boot_pagetable1 - 0xC0000000 + 0x003), kernel_pagedir - 0xC0000000 + 768 * 4
 
 	# Set cr3 to the address of the boot_page_directory.
-	movl $(boot_pagedir - 0xC0000000), %ecx
+	movl $(kernel_pagedir - 0xC0000000), %ecx
 	movl %ecx, %cr3
 
 
@@ -95,7 +96,7 @@ _start:
 	# At this point, paging is fully set up and enabled.
 
 	# Unmap the identity mapping as it is now unnecessary.
-	movl $0, boot_pagedir + 0
+	movl $0, kernel_pagedir + 0
 
 	# Reload crc3 to force a TLB flush so the changes to take effect.
 	movl %cr3, %ecx
@@ -104,7 +105,7 @@ _start:
 	# Set up the stack.
 	mov $stack_top, %esp
 
-    push $boot_pagedir
+    push $kernel_pagedir
 
     add $0xC0000000, %ebx
     push %ebx

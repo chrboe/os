@@ -6,8 +6,9 @@
 #include "mm/pmm.h"
 
 struct task {
-	struct stackframe* frame;
-	struct task* next;
+	struct stackframe *frame;
+	struct task *next;
+	struct vmm_context *context;
 };
 
 struct stackframe* schedule(struct stackframe* frame);

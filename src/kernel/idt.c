@@ -254,6 +254,12 @@ void dump_frame(struct stackframe* frame)
 	kprintf(COL_NOR, "esp=0x%x  ss =0x%x\r\n", frame->esp, frame->ss);
 }
 
+void panic(const char *msg)
+{
+    kprintf(COL_CRI, "KERNEL PANIC\r\n%s\r\n", msg);
+    abort();
+}
+
 static void handle_syscall(struct stackframe* frame)
 {
     uint32_t scallnum = frame->eax;
@@ -279,5 +285,6 @@ struct stackframe* isr_handler_common(struct stackframe* frame)
         }
 
     }
+
     return new_frame;
 }

@@ -1,5 +1,6 @@
 export BUILD_DIRECTORY := $(abspath build)
 export OBJ_DIRECTORY := ${BUILD_DIRECTORY}/obj
+export TARGET := ${BUILD_DIRECTORY}/kernel
 CODE_DIRECOTRY := $(abspath src)
 
 FILES := $(shell find . -name "*.c")
@@ -13,7 +14,7 @@ export COLOR_SD := \033[0;34m
 export COLOR_NO := \033[0m
 
 
-all: ${OBJ_DIRECTORY} code
+all: code
 
 ${OBJ_DIRECTORY}: ${BUILD_DIRECTORY}
 	@echo "Creating object directory..."
