@@ -4,12 +4,15 @@
 #include "console.h"
 #include "idt.h"
 #include "mm/pmm.h"
+#include "mm/paging.h"
 
 struct task {
 	struct stackframe *frame;
 	struct task *next;
 	struct vmm_context *context;
 };
+
+extern struct vmm_context *kernel_context;
 
 struct stackframe* schedule(struct stackframe* frame);
 void init_multitasking();

@@ -98,52 +98,79 @@ void init_multitasking()
     init_task(task_c);
     init_task(task_d);
     uart_printf("TASK INIT DONE");
-    while(1);
     asm("sti");
+}
+
+void arch_do_context_switch(uint32_t esp, uint32_t pagedir, uint32_t *old_esp);
+
+static void switch_task(struct task *const new_task)
+{
+    asm("cli");
+    uart_printf("context switch\r\n");
+    uart_printf("new context = %x\r\n", new_task->context);
+    uart_printf("new pagedir = %x\r\n", new_task->context->page_directory);
+    physaddr_t pagedir_phys = vmm_kresolve(new_task->context->page_directory);
+    uart_printf("new pagedir_phys = %x\r\n", pagedir_phys);
+    uart_printf("saving frames\r\n");
+
+    struct stackframe *curr_frame = current_task->frame;
+    uart_printf("saved current frame\r\n");
+    struct stackframe *new_frame = new_task->frame;
+    uart_printf("saved new frame\r\n");
+
+    uart_printf("setting kernel context to %x...", new_task->context);
+    kernel_context = new_task->context;
+    uart_printf("done!\r\n");
+    current_task = new_task;
+    
+    arch_do_context_switch(new_frame->esp, pagedir_phys, &curr_frame->esp);
+    asm("sti");
+}
+
+static struct task *choose_next_task()
+{
+    struct task *next_task;
+    if (current_task == 0) {
+        uart_printf("this is the first scheduler call\r\n");
+        /* we are just starting out */
+        next_task = first_task;
+    } else {
+        uart_printf("using next task (%x) %s\r\n", current_task->next, current_task->next == first_task ? "(== first)" : "");
+        next_task = current_task->next;
+        if(current_task == 0) {
+            uart_printf("this was the last entry\r\n");
+            /* this was the last entry */
+            next_task = first_task;
+        }
+    }
+
+    uart_printf("chose %x\r\n", next_task);
+    return next_task;  
 }
 
 struct stackframe* schedule(struct stackframe* frame)
 {
     uart_puts("schedule\r\n");
-    uart_printf("first: 0x%x\r\ncurrent: 0x%x\r\n", first_task, current_task);
+    uart_printf("first_task: 0x%x\r\ncurrent_task: 0x%x\r\n", first_task, current_task);
     struct task *orig_task = current_task;
 
-    if(first_task == 0) {
+    if (first_task == 0) {
         /* we have no tasks */
-        //kputs(COL_NOR, "no tasks\r\n");
+        uart_printf("no tasks\r\n");
         return frame;
     }
 
-    if(current_task != 0) {
+    if (current_task != 0) {
         /* save the stackframe */
         current_task->frame = frame;
     }
 
-    /* select next task */
-    if(current_task == 0) {
-        uart_printf("this is the first scheduler call\r\n");
-        /* we are just starting out */
-        current_task = first_task;
-    } else {
-        uart_printf("using next task (%x) %s\r\n", current_task->next, current_task->next == first_task ? "(== first)" : "");
-        current_task = current_task->next;
-        if(current_task == 0) {
-            uart_printf("this was the last entry\r\n");
-            /* this was the last entry */
-            current_task = first_task;
-        }
-    }
-
-    uart_printf("chose %x\r\n", current_task);
+    /* choose next task */
+    struct task *next_task = choose_next_task();
 
     /* switch context if necessary */
-    if (orig_task != current_task && current_task != 0) {
-        uart_printf("context switch\r\n");
-        uart_printf("current context = %x\r\n", current_task->context);
-        uart_printf("pagedir = %x\r\n", current_task->context->page_directory);
-        physaddr_t pagedir_phys = vmm_kresolve(current_task->context->page_directory);
-        uart_printf("pagedir_phys = %x\r\n", pagedir_phys);
-        asm volatile("mov %0, %%cr3" : : "r" (current_task->context->page_directory));
+    if (next_task != current_task && next_task != 0) {
+        switch_task(next_task);
     }
 
     //frame = current_task->frame;

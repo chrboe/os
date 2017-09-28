@@ -3,7 +3,7 @@
 extern const void kernel_start;
 extern const void kernel_end;
 
-static struct vmm_context *kernel_context;
+struct vmm_context *kernel_context;
 static struct vmm_context tmp_kernel_context;
 
 static void blank_directory(uint32_t *pagedir)

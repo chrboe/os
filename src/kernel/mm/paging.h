@@ -18,6 +18,8 @@ struct vmm_context {
     uint32_t *page_directory;
 };
 
+extern struct vmm_context *kernel_context;
+
 static inline uint32_t clear_flags(uint32_t entry)
 {
     return entry & ~0xFFF;

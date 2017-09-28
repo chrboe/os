@@ -8,7 +8,7 @@ all: ${OBJFILES}
 
 ${TARGET_DIR}/%.o: %.c ${TARGET_DIR}
 	@echo -e "${COLOR_CC}CC\t$<${COLOR_NO}"
-	@${CC} -c ${CFLAGS} -o $@ $<
+	${CC} -c ${CFLAGS} -o $@ $<
 
 ${TARGET_DIR}/%.o: %.S ${TARGET_DIR}
 	@echo -e "${COLOR_AS}AS\t$<${COLOR_NO}"
