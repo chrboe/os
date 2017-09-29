@@ -57,7 +57,7 @@ void get_time(struct datetime *result)
         /* convert from BCD to binary */
         seconds = (seconds & 0x0F) + ((seconds / 16) * 10);
         minutes = (minutes & 0x0F) + ((minutes / 16) * 10);
-        hours = ( (hours & 0x0F) + (((hours & 0x70) / 16) * 10) ) | (hours & 0x80);
+        hours = ((hours & 0x0F) + (((hours & 0x70) / 16) * 10)) | (hours & 0x80);
         day = (day & 0x0F) + ((day / 16) * 10);
         month = (month & 0x0F) + ((month / 16) * 10);
         year = (year & 0x0F) + ((year / 16) * 10);

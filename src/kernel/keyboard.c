@@ -7,7 +7,7 @@ uint8_t init_keyboard()
         inb(0x60);
     }
 
-    keyboard_command(0xF4);	
+    keyboard_command(0xF4);
     return ERR_OK;
 }
 

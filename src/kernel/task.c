@@ -73,7 +73,9 @@ struct task* init_task(void* func)
      * worden. So kann man dem Interrupthandler den neuen Task unterschieben
      * und er stellt einfach den neuen Prozessorzustand "wieder her".
      */
-    struct stackframe* frame = (struct stackframe*) (stack + 4096 - sizeof(new_frame));
+    struct stackframe* frame = (struct stackframe*)
+        (stack + 4096 - sizeof(new_frame));
+
     *frame = new_frame;
 
     /*
@@ -86,7 +88,8 @@ struct task* init_task(void* func)
     task->context = vmm_create_context();
     first_task = task;
 
-    uart_printf("task: 0x%x\r\nfirst: 0x%x\r\ncurrent: 0x%x\r\n", task, first_task, current_task);
+    uart_printf("task: 0x%x\r\nfirst: 0x%x\r\ncurrent: 0x%x\r\n",
+            task, first_task, current_task);
     return task;
 }
 
@@ -122,7 +125,7 @@ static void switch_task(struct task *const new_task)
     active_context = new_task->context;
     uart_printf("done!\r\n");
     current_task = new_task;
-    
+
     arch_do_context_switch(new_frame->esp, pagedir_phys, &curr_frame->esp);
     asm("sti");
 }
@@ -135,7 +138,9 @@ static struct task *choose_next_task()
         /* we are just starting out */
         next_task = first_task;
     } else {
-        uart_printf("using next task (%x) %s\r\n", current_task->next, current_task->next == first_task ? "(== first)" : "");
+        uart_printf("using next task (%x) %s\r\n", current_task->next,
+                current_task->next == first_task ? "(== first)" : "");
+
         next_task = current_task->next;
         if(current_task == 0) {
             uart_printf("this was the last entry\r\n");
@@ -145,13 +150,14 @@ static struct task *choose_next_task()
     }
 
     uart_printf("chose %x\r\n", next_task);
-    return next_task;  
+    return next_task;
 }
 
 struct stackframe* schedule(struct stackframe* frame)
 {
     uart_puts("schedule\r\n");
-    uart_printf("first_task: 0x%x\r\ncurrent_task: 0x%x\r\n", first_task, current_task);
+    uart_printf("first_task: 0x%x\r\ncurrent_task: 0x%x\r\n", first_task,
+            current_task);
     struct task *orig_task = current_task;
 
     if (first_task == 0) {

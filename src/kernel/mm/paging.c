@@ -49,7 +49,8 @@ static void vmm_unmap_page(struct vmm_context *context, virtaddr_t addr)
     /* TODO */
 }
 
-static uint32_t get_pt_entry(uint32_t *page_directory, uintptr_t minimum, uintptr_t maximum, virtaddr_t addr)
+static uint32_t get_pt_entry(uint32_t *page_directory, uintptr_t minimum,
+        uintptr_t maximum, virtaddr_t addr)
 {
     uint32_t page_number = (uint32_t)addr / 4096;
     uint32_t pd_index = page_number / 1024;
@@ -58,8 +59,13 @@ static uint32_t get_pt_entry(uint32_t *page_directory, uintptr_t minimum, uintpt
     if (page_directory[pd_index] & PAGE_PRESENT) {
         physaddr_t page_table_phys = clear_flags(page_directory[pd_index]);
 
-        /* just remap the address real quick. may seem dirty, but it's the easiest thing to do */
-        uint32_t *page_table = vmm_find_free_area(active_context, minimum, maximum, 1);
+        /*
+         * just remap the address real quick. may seem dirty,
+         * but it's the easiest thing to do
+         */
+        uint32_t *page_table = vmm_find_free_area(active_context,
+                minimum, maximum, 1);
+
         vmm_map_page(active_context, page_table, page_table_phys);
 
         uint32_t result = 0;
@@ -85,9 +91,11 @@ physaddr_t vmm_kresolve(virtaddr_t addr)
     return vmm_resolve(active_context, 0xC0000000, 0xFFFFFFFF, addr);
 }
 
-physaddr_t vmm_resolve(struct vmm_context *context, uintptr_t minimum, uintptr_t maximum, virtaddr_t addr)
+physaddr_t vmm_resolve(struct vmm_context *context, uintptr_t minimum,
+        uintptr_t maximum, virtaddr_t addr)
 {
-    uint32_t pte = get_pt_entry(context->page_directory, minimum, maximum, addr);
+    uint32_t pte = get_pt_entry(context->page_directory,
+            minimum, maximum, addr);
 
     if (pte & PAGE_PRESENT) {
         return clear_flags(pte) | ((uint32_t)addr & 0xFFF);
@@ -96,7 +104,8 @@ physaddr_t vmm_resolve(struct vmm_context *context, uintptr_t minimum, uintptr_t
     }
 }
 
-virtaddr_t vmm_map_consecutive(struct vmm_context *context, virtaddr_t start, uint32_t num)
+virtaddr_t vmm_map_consecutive(struct vmm_context *context, virtaddr_t start,
+        uint32_t num)
 {
     uart_printf("vmm_map_consecutive: start: %x, num: %x\r\n", start, num);
     for (int i = 0; i < num; i++) {
@@ -109,7 +118,8 @@ virtaddr_t vmm_map_consecutive(struct vmm_context *context, virtaddr_t start, ui
     return start;
 }
 
-void* vmm_find_free_area(struct vmm_context *context, uintptr_t minimum, uintptr_t maximum, uint32_t num_pages)
+void* vmm_find_free_area(struct vmm_context *context, uintptr_t minimum,
+        uintptr_t maximum, uint32_t num_pages)
 {
     uart_printf("[find] read pd at %x\r\n", context);
     uint32_t *pd = context->page_directory;
@@ -124,9 +134,15 @@ void* vmm_find_free_area(struct vmm_context *context, uintptr_t minimum, uintptr
         minimum = 0x1000;
     }
 
-    uart_printf("[find] minimum = %x (%d)\r\n", minimum, (minimum >> 12) / 1024);
-    uart_printf("[find] maximum = %x (%d)\r\n", maximum, (maximum >> 12) /1024);
-    for(int j = (minimum >> 12) / 1024; j < 1024 && j < (maximum >> 12) / 1024; j++) {
+    uart_printf("[find] minimum = %x (%d)\r\n", minimum,
+            (minimum >> 12) / 1024);
+
+    uart_printf("[find] maximum = %x (%d)\r\n", maximum,
+            (maximum >> 12) /1024);
+
+    for(int j = (minimum >> 12) / 1024;
+            j < 1024 && j < (maximum >> 12) / 1024;
+            j++) {
         uart_printf("[find] pd[%d] (%x)\r\n", j, pd[j]);
         if (pd[j] & PAGE_PRESENT) {
             uart_printf("[find] page table present\r\n");
@@ -143,8 +159,12 @@ void* vmm_find_free_area(struct vmm_context *context, uintptr_t minimum, uintptr
                     consecutive++;
 
                     if (first_consecutive == 0) {
-                        uart_printf("[find] pt: first_consecutive: %x ->", first_consecutive);
-                        first_consecutive = (uint32_t*)((j * 1024 * 4096) + (i * 4096));
+                        uart_printf("[find] pt: first_consecutive: %x ->",
+                                first_consecutive);
+
+                        first_consecutive = (uint32_t*)((j * 1024 * 4096)
+                                + (i * 4096));
+
                         uart_printf(" %x\r\n", first_consecutive);
                         uart_printf("i: %d, j: %d", i, j);
                     }
@@ -158,7 +178,9 @@ void* vmm_find_free_area(struct vmm_context *context, uintptr_t minimum, uintptr
             }
         } else {
             if (first_consecutive == 0) {
-                uart_printf("[find] pd: first_consecutive: %x ->", first_consecutive);
+                uart_printf("[find] pd: first_consecutive: %x ->",
+                        first_consecutive);
+
                 first_consecutive = (uint32_t*)(j << 12);
                 uart_printf(" %x\r\n", first_consecutive);
             }
@@ -201,7 +223,8 @@ void* vmm_kalloc_pages(uint32_t num_pages)
 {
     uart_printf("allocating %x pages (kernel)\r\n", num_pages);
     uart_printf("active context: %x\r\n", active_context);
-    virtaddr_t virt = vmm_find_free_area(active_context, 0xC0000000, 0xFFFFFFFF, num_pages);
+    virtaddr_t virt = vmm_find_free_area(active_context,
+            0xC0000000, 0xFFFFFFFF, num_pages);
     uart_printf("found free area at %x\r\n", virt);
 
     if(virt == 0) {
@@ -219,14 +242,17 @@ void* vmm_kalloc(uint32_t size)
     return vmm_kalloc_pages(num_pages);
 }
 
-uint32_t vmm_map_page(struct vmm_context *context, virtaddr_t virt, uintptr_t phys)
+uint32_t vmm_map_page(struct vmm_context *context, virtaddr_t virt,
+        uintptr_t phys)
 {
     uart_printf("vmm_map_page: %x -> %x\r\n", phys, virt);
     uint32_t page_number = (uint32_t)virt / 4096;
     uint32_t pd_index = page_number / 1024;
     uint32_t pt_index = page_number % 1024;
 
-    uart_printf("pagenum %x pd_index %x pt_index %x\r\n", page_number, pd_index, pt_index);
+    uart_printf("pagenum %x pd_index %x pt_index %x\r\n", page_number, pd_index,
+            pt_index);
+
     physaddr_t page_table;
 
     /* check if page table is already present */
@@ -239,7 +265,9 @@ uint32_t vmm_map_page(struct vmm_context *context, virtaddr_t virt, uintptr_t ph
         page_table = pmm_alloc();
         uart_puts("after malloc\r\n");
 
-        directory_put(context, pd_index, (uint32_t)page_table, PAGE_PRESENT | PAGE_WRITE);
+        directory_put(context, pd_index,
+                (uint32_t)page_table, PAGE_PRESENT | PAGE_WRITE);
+
         invalidate_tlb(context->page_directory);
         uart_puts("after directory_put\r\n");
     }
@@ -248,7 +276,9 @@ uint32_t vmm_map_page(struct vmm_context *context, virtaddr_t virt, uintptr_t ph
     virtaddr_t page_table_virt;
     virtaddr_t tmp;
 
-    uart_printf("active_context = %x, context = %x\r\n", active_context, context);
+    uart_printf("active_context = %x, context = %x\r\n",
+            active_context, context);
+
     if (context == active_context || context == &tmp_kernel_context) {
         page_table_virt = (uint32_t*)(0xC0000000 + clear_flags(page_table));
     } else {
@@ -288,13 +318,15 @@ uint32_t vmm_init(uint32_t *kernel_pagedir)
     uart_printf("kernel_pagedir = %x\r\n", kernel_pagedir);
 
 
-    active_context = vmm_find_free_area(&tmp_kernel_context, 0xC0000000, 0xFFFFFFFF, 1);
+    active_context = vmm_find_free_area(&tmp_kernel_context,
+            0xC0000000, 0xFFFFFFFF, 1);
 
     if(active_context == 0) {
         panic("no more space at vmm init");
     }
 
-    active_context = vmm_map_consecutive(&tmp_kernel_context, active_context, 1);
+    active_context = vmm_map_consecutive(&tmp_kernel_context,
+            active_context, 1);
 
     uart_printf("active_context = %x\r\n", active_context);
     active_context->page_directory = kernel_pagedir;

@@ -20,7 +20,8 @@ static int identify(struct ata_device *dev)
 	outb(ATA_LBA_MI(dev->bus), 0x00);
 	outb(ATA_LBA_HI(dev->bus), 0x00);
 
-	outb(ATA_COMMAND(dev->bus), ATA_CMD_IDENTIFY); /* send the IDENTIFY command */
+    /* send the IDENTIFY command */
+	outb(ATA_COMMAND(dev->bus), ATA_CMD_IDENTIFY);
 
 	uint8_t status = inb(ATA_STATUS(dev->bus));
 
@@ -33,8 +34,8 @@ static int identify(struct ata_device *dev)
 	 * - for any other value, we need to poll the
 	 *   status port until bit 7 (BSY) clears.
 	 * - while polling, if the LBAm and LBAh
-	 *   ports are non-zero when BSY clears, 
-	 *   abort polling (that would be a non-ATA 
+	 *   ports are non-zero when BSY clears,
+	 *   abort polling (that would be a non-ATA
 	 *   drive)
 	 * - continue polling until bit 3 (DRQ)
 	 *   sets or bit 0 (ERR) sets
@@ -76,7 +77,7 @@ static int identify(struct ata_device *dev)
 		data[i]  = inw(ATA_DATA(dev->bus));
 	}
 
-	/* 
+	/*
 	 * for example, we can now determine whether
 	 * or not the drive supports LBA48 (10th bit
 	 * of word 83)
@@ -85,14 +86,12 @@ static int identify(struct ata_device *dev)
 	if(data[83] & 0x400) {
 		dev->supports_lba48 = 1;
 
-		/* 
+		/*
 		 * words 100-103 (as a single uint64_t)
 		 * tell us how many lba48 addressable
 		 * sectors there are
 		 */
-		dev->lba48_sectors = *(uint64_t*)(data+100); 
-
-		//kprintf(COL_NOR, "dev supports lba48. sectors: %d\r\n", dev->lba48_sectors);
+		dev->lba48_sectors = *(uint64_t*)(data+100);
 	}
 
 	/*
@@ -104,8 +103,6 @@ static int identify(struct ata_device *dev)
 	dev->lba28_sectors = *(uint32_t*)(data+60);
 	if(dev->lba28_sectors == 0) {
 		dev->supports_lba28 = 0;
-	} else {
-		//kprintf(COL_NOR, "dev supports lba28. sectors: %d\r\n", dev->lba28_sectors);
 	}
 
 	return IDEN_VALID;
@@ -123,7 +120,7 @@ int discover_devices(struct ata_device *devices[2])
 	int res = DEV_NONE;
 
 	/*
-	 * first up is the so-called "floating bus" 
+	 * first up is the so-called "floating bus"
 	 * test. this relies on the fact that the
 	 * physical cables get pulled up to logic
 	 * level "high" by the pull-up resistors if
@@ -191,7 +188,8 @@ int ata_init(struct ata_device *devices[2])
 	return ERR_NOTFOUND;
 }
 
-static int ata_io(uint16_t* data, struct ata_device *dev, uint32_t lba, uint8_t count, int direction)
+static int ata_io(uint16_t* data, struct ata_device *dev, uint32_t lba,
+        uint8_t count, int direction)
 {
 	/*
 	 * this function reads from or writes to
@@ -200,8 +198,8 @@ static int ata_io(uint16_t* data, struct ata_device *dev, uint32_t lba, uint8_t 
 	 *
 	 * to get data from or write data to the
 	 * harddisk,we first have to select our drive
-	 * (master or slave) and tell the drive how 
-	 * much data we wanna read or write and 
+	 * (master or slave) and tell the drive how
+	 * much data we wanna read or write and
 	 * from/to where we wanna read/write it.
 	 * this is done by sending 0xE0 (master)
 	 * or 0xF0 (slave) ORed with the highest 4
@@ -257,7 +255,8 @@ static int ata_io(uint16_t* data, struct ata_device *dev, uint32_t lba, uint8_t 
 		 */
 		do {
 			status = inb(ATA_STATUS(dev->bus));
-		} while(((status & 0x80) && !(status & 0x08)) && !(status & 0x01) && !(status & 0x20));
+		} while(((status & 0x80) && !(status & 0x08))
+                && !(status & 0x01) && !(status & 0x20));
 
 		/*
 		 * if an error occoured, we just print it to
@@ -305,7 +304,7 @@ static int ata_io(uint16_t* data, struct ata_device *dev, uint32_t lba, uint8_t 
 		for(uint16_t j = 0; j < 256; j++) {
 			if(direction == DIR_READ) {
 				data[(i*256)+j] = inw(ATA_DATA(dev->bus));
-			} else {	
+			} else {
 				outw(ATA_DATA(dev->bus), data[(i*256)+j]);
 			}
 		}
@@ -326,7 +325,8 @@ int ata_read(uint16_t* dst, struct ata_device *dev, uint32_t lba, uint8_t count)
 	return ata_io(dst, dev, lba, count, DIR_READ);
 }
 
-int ata_write(uint16_t* src, struct ata_device *dev, uint32_t lba, uint8_t count)
+int ata_write(uint16_t* src, struct ata_device *dev, uint32_t lba,
+        uint8_t count)
 {
 	return ata_io(src, dev, lba, count, DIR_WRITE);
 }

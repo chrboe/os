@@ -168,17 +168,19 @@ static void handle_page_fault(struct stackframe *frame)
 {
     kprintf(COL_CRI, "Page Fault!\r\n");
     kprintf(COL_ERR, "Error: 0x%x\r\n", frame->error);
-    switch(frame->error & 0x7) {
-        case 0: kprintf(COL_NOR, "Supervisory process tried to read a non-present page entry\r\n"); break;
-        case 1: kprintf(COL_NOR, "Supervisory process tried to read a page and caused a protection fault\r\n"); break;
-        case 2: kprintf(COL_NOR, "Supervisory process tried to write to a non-present page entry\r\n"); break;
-        case 3: kprintf(COL_NOR, "Supervisory process tried to write a page and caused a protection fault\r\n"); break;
-        case 4: kprintf(COL_NOR, "User process tried to read a non-present page entry\r\n"); break;
-        case 5: kprintf(COL_NOR, "User process tried to read a page and caused a protection fault\r\n"); break;
-        case 6: kprintf(COL_NOR, "User process tried to write to a non-present page entry\r\n"); break;
-        case 7: kprintf(COL_NOR, "User process tried to write a page and caused a protection fault\r\n"); break;
-    }
 
+    static const char *errors[] = {
+        "Supervisory process tried to read a non-present page entry",
+        "Supervisory process tried to read a page and caused a PF",
+        "Supervisory process tried to write to a non-present page entry",
+        "Supervisory process tried to write a page and caused a PF",
+        "User process tried to read a non-present page entry",
+        "User process tried to read a page and caused a PF",
+        "User process tried to write to a non-present page entry",
+        "User process tried to write a page and caused a protection fault"
+    };
+
+    kprintf(COL_NOR, "%s\r\n", errors[frame->error & 0x7]);
     abort();
 }
 
@@ -190,20 +192,14 @@ static void handle_exception(struct stackframe* frame)
 
     kprintf(COL_ERR, "The following exception just occurred:\r\n");
     switch(frame->interrupt) {
-        case 0:
-            kprintf(COL_CRI, "Division by Zero");
-            break;
-        case 13:
-            kprintf(COL_CRI, "General Protection Fault");
-            break;
-        default:
-            kprintf(COL_CRI, "(Unknown)");
-            break;
+        case 0:  kprintf(COL_CRI, "Division by Zero");         break;
+        case 13: kprintf(COL_CRI, "General Protection Fault"); break;
+        default: kprintf(COL_CRI, "(Unknown)");                break;
     }
+
     kprintf(COL_CRI, " (%d)\r\n\r\n", frame->interrupt);
 
 	dump_frame(frame);
-
     abort();
 }
 
@@ -221,7 +217,10 @@ static struct stackframe* handle_irq(struct stackframe* frame)
             uint8_t scancode = inb(0x60);
             process_keyboard(scancode);
 
-            if(is_key_pressed(KEY_LCTRL) && is_key_pressed(KEY_LALT) && is_key_pressed(KEY_DELETE1) && is_key_pressed(KEY_DELETE2)) {
+            if(is_key_pressed(KEY_LCTRL)
+                    && is_key_pressed(KEY_LALT)
+                    && is_key_pressed(KEY_DELETE1)
+                    && is_key_pressed(KEY_DELETE2)) {
                 kprintf(COL_CRI, "RECEIVED THREE-FINGER-SALUTE, REBOOTING");
                 reboot();
             }
@@ -247,10 +246,14 @@ static struct stackframe* handle_irq(struct stackframe* frame)
 
 void dump_frame(struct stackframe* frame)
 {
-	kprintf(COL_NOR, "eax=0x%x  ebx=0x%x  ecx=0x%x\r\n", frame->eax, frame->ebx, frame->ecx);
-	kprintf(COL_NOR, "edx=0x%x  esi=0x%x  edi=0x%x\r\n", frame->edx, frame->esi, frame->edi);
-	kprintf(COL_NOR, "ebp=0x%x  int=0x%x  err=0x%x\r\n", frame->ebp, frame->interrupt, frame->error);
-	kprintf(COL_NOR, "eip=0x%x  cs =0x%x  efl=0x%x\r\n", frame->eip, frame->cs, frame->eflags);
+	kprintf(COL_NOR, "eax=0x%x  ebx=0x%x  ecx=0x%x\r\n",
+            frame->eax, frame->ebx, frame->ecx);
+	kprintf(COL_NOR, "edx=0x%x  esi=0x%x  edi=0x%x\r\n",
+            frame->edx, frame->esi, frame->edi);
+	kprintf(COL_NOR, "ebp=0x%x  int=0x%x  err=0x%x\r\n",
+            frame->ebp, frame->interrupt, frame->error);
+	kprintf(COL_NOR, "eip=0x%x  cs =0x%x  efl=0x%x\r\n",
+            frame->eip, frame->cs, frame->eflags);
 	kprintf(COL_NOR, "esp=0x%x  ss =0x%x\r\n", frame->esp, frame->ss);
 }
 
@@ -273,13 +276,14 @@ struct stackframe* isr_handler_common(struct stackframe* frame)
     //kprintf(COL_NOR, "interrupt %d\r\n", frame->interrupt);
     uart_printf("interrupt %d\r\n", frame->interrupt);
     if(frame->interrupt <= 0x1f) {
-        handle_exception(frame); 
+        handle_exception(frame);
     } else if(frame->interrupt >= 0x20 && frame->interrupt <= 0x2f) {
         new_frame = handle_irq(frame);
     } else if(frame->interrupt == 0x30) {
         handle_syscall(frame);
     } else {
-        kprintf(COL_CRI, "Unknown Interrupt (%d) occoured. Kernel aborted.", frame->interrupt);
+        kprintf(COL_CRI, "Unknown Interrupt (%d) occoured. Kernel aborted.",
+                frame->interrupt);
         while(1) {
             asm volatile("cli; hlt");
         }

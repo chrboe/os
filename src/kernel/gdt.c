@@ -7,8 +7,8 @@ uint32_t tss[32] = {0, 0, 0x10};
  * and returns it as a 64 bit integer. it just basically shifts everything
  * into the correct place.
  */
-static unsigned long long build_gdt_segment(unsigned int base, unsigned int limit, 
-        unsigned int flags)
+static unsigned long long build_gdt_segment(unsigned int base,
+        unsigned int limit, unsigned int flags)
 {
     unsigned long long val;
     val  = limit        & 0x000F0000;
@@ -35,11 +35,17 @@ static unsigned long long build_gdt_segment(unsigned int base, unsigned int limi
  */
 void setup_gdt()
 {
+    /* null descriptor */
     gdt[0] = 0;
-    gdt[1] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_KERNEL_CODE); /* kernel code */
-    gdt[2] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_KERNEL_DATA); /* kernel data*/
-    gdt[3] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_USER_CODE); /* user code */
-    gdt[4] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_USER_DATA); /* user data */
+    /* kernel code */
+    gdt[1] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_KERNEL_CODE);
+     /* kernel data*/
+    gdt[2] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_KERNEL_DATA);
+    /* user code */
+    gdt[3] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_USER_CODE);
+    /* user data */
+    gdt[4] = build_gdt_segment(0, 0x100000-1, GDT_FLAGS_USER_DATA);
+    /* task state semgent */
     gdt[5] = build_gdt_segment((uint32_t)tss, sizeof(tss), GDT_FLAGS_TSS);
 }
 

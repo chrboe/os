@@ -101,7 +101,8 @@ void init(struct multiboot_structure *mb_struc, uint32_t *pagedir)
 	int gpt_stat = discover_gpt(devices[0]);
 	if(gpt_stat == ERR_OK) {
 		kputs(COL_SUC, "OK\r\n");
-        kprintf(COL_NOR, "Signature: %x %x %x %x\r\n", data[0], data[1], data[2], data[3]);
+        kprintf(COL_NOR, "Signature: %x %x %x %x\r\n",
+                data[0], data[1], data[2], data[3]);
 	} else if (gpt_stat == ERR_NOTFOUND) {
 		kputs(COL_WAR, "NOT FOUND\r\n");
 	} else {
@@ -136,8 +137,15 @@ void init(struct multiboot_structure *mb_struc, uint32_t *pagedir)
 
     struct datetime time;
     get_time(&time);
-    kprintf(COL_NOR, "Date: %d%d-%d-%d, Time: %d:%d:%d\r\n", (uint32_t)time.century, (uint32_t)time.year, (uint32_t)time.month, (uint32_t)time.day, (uint32_t)time.hours, (uint32_t)time.minutes, (uint32_t)time.seconds);
-    uart_printf( "Date: %d%d-%d-%d, Time: %d:%d:%d\r\n", (uint32_t)time.century, (uint32_t)time.year, (uint32_t)time.month, (uint32_t)time.day, (uint32_t)time.hours, (uint32_t)time.minutes, (uint32_t)time.seconds);
+    kprintf(COL_NOR, "Date: %d%d-%d-%d, Time: %d:%d:%d\r\n",
+            (uint32_t)time.century, (uint32_t)time.year, (uint32_t)time.month,
+            (uint32_t)time.day, (uint32_t)time.hours, (uint32_t)time.minutes,
+            (uint32_t)time.seconds);
+
+    uart_printf("Date: %d%d-%d-%d, Time: %d:%d:%d\r\n",
+            (uint32_t)time.century, (uint32_t)time.year, (uint32_t)time.month,
+            (uint32_t)time.day, (uint32_t)time.hours, (uint32_t)time.minutes,
+            (uint32_t)time.seconds);
 
     kputs(COL_NOR, "Initializing PIT... ");
     uint8_t pit_stat = pit_init(100);

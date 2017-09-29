@@ -54,9 +54,11 @@ void dump_free_bits()
 void pmm_init(struct multiboot_structure* mb_struc)
 {
     struct multiboot_mmap* mmap = mb_struc->mmap_addr;
-    struct multiboot_mmap* mmap_end = (void*)((uintptr_t) mb_struc->mmap_addr + mb_struc->mmap_length);
+    struct multiboot_mmap* mmap_end = (void*)((uintptr_t) mb_struc->mmap_addr
+            + mb_struc->mmap_length);
 
-    uart_printf("mmap: %x\r\nmmap_length: %d\r\nmmap_end: %x\r\n", mmap, mb_struc->mmap_length, mmap_end);
+    uart_printf("mmap: %x\r\nmmap_length: %d\r\nmmap_end: %x\r\n", mmap,
+            mb_struc->mmap_length, mmap_end);
 
     /* reserve everything by default */
     for(int i = 0; i < NUM_PAGES; i++) {
@@ -78,8 +80,6 @@ void pmm_init(struct multiboot_structure* mb_struc)
         }
         mmap++;
     }
-
-    //uart_printf("mark used from %x to %x\r\n", (uintptr_t)&kernel_start-KERNEL_BASE_V, (uintptr_t)&kernel_end-KERNEL_BASE_V);
 
     /* mark the kernel as used again */
     uintptr_t kern_base = (uintptr_t)&kernel_start-KERNEL_BASE_V;

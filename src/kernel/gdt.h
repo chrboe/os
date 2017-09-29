@@ -5,14 +5,21 @@
 
 #define GDT_ENTRIES 6
 
-#define SEG_DESCTYPE(x)  ((x) << 0x04) /* descriptor type (0 for system, 1 for code/data) */
-#define SEG_PRES(x)      ((x) << 0x07) /* present */
-#define SEG_SAVL(x)      ((x) << 0x0C) /* available for system use */
-#define SEG_LONG(x)      ((x) << 0x0D) /* long mode */
-#define SEG_SIZE(x)      ((x) << 0x0E) /* size (0 for 16 bit, 1 for 32) */
-#define SEG_GRAN(x)      ((x) << 0x0F) /* granularity (0 -> each step is 1B, 1 -> each step is 4kB) */
-#define SEG_RING(x)     (((x) &  0x03) << 0x05) /* set ring (0 (=kernel mode) to 3 (=user mode)) */
- 
+/* descriptor type (0 for system, 1 for code/data) */
+#define SEG_DESCTYPE(x)  ((x) << 0x04)
+/* present flag */
+#define SEG_PRES(x)      ((x) << 0x07)
+/* available for system use */
+#define SEG_SAVL(x)      ((x) << 0x0C)
+/* long mode */
+#define SEG_LONG(x)      ((x) << 0x0D)
+/* size (0 for 16 bit, 1 for 32) */
+#define SEG_SIZE(x)      ((x) << 0x0E)
+/* granularity (0 -> each step is 1B, 1 -> each step is 4kB) */
+#define SEG_GRAN(x)      ((x) << 0x0F)
+/* set ring (0 (=kernel mode) to 3 (=user mode)) */
+#define SEG_RING(x)     (((x) &  0x03) << 0x05)
+
 #define SEG_DATA_RD        0x00 /* read only */
 #define SEG_DATA_RDA       0x01 /* read only, accessed */
 #define SEG_DATA_RDWR      0x02 /* read/write */
