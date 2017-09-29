@@ -18,7 +18,7 @@ void task_b()
     asm volatile("movl $2, %eax");
     while(1) {
         asm volatile("int $48");
-        //uart_puts("task b\r\n");
+        uart_puts("task b\r\n");
     }
 }
 
@@ -119,7 +119,7 @@ static void switch_task(struct task *const new_task)
     uart_printf("saved new frame\r\n");
 
     uart_printf("setting kernel context to %x...", new_task->context);
-    kernel_context = new_task->context;
+    active_context = new_task->context;
     uart_printf("done!\r\n");
     current_task = new_task;
     

@@ -1,8 +1,7 @@
 SRCFILES := $(wildcard *.c)
-TARGET_DIR = ${OBJ_DIRECTORY}/kernel
-OBJFILES := $(patsubst %.c,${TARGET_DIR}/%.o,${SRCFILES})
+OBJFILES := $(patsubst %.c,%.o,${SRCFILES})
 LD_SCRIPT = $(abspath i386/pc/layout.ld)
-LD_OBJS := $(shell find ${TARGET_DIR} -type f -name "*.o")
+LD_OBJS := $(shell find . -type f -name "*.o")
 SUBDIRS := mm io i386
 
 # include directories
@@ -28,10 +27,7 @@ all: ${SUBDIRS} ${OBJFILES}
 	@echo -e "${COLOR_LD}LD\t${TARGET}${COLOR_NO}"
 	@${LD} ${LDFLAGS} ${LD_OBJS} -T ${LD_SCRIPT} -o ${TARGET}
 
-${TARGET_DIR}:
-	mkdir -p ${TARGET_DIR}
-
-${TARGET_DIR}/%.o: %.c ${TARGET_DIR}
+%.o: %.c
 	@echo -e "${COLOR_CC}CC\t$<${COLOR_NO}"
 	@${CC} -c ${CFLAGS} -o $@ $<
 

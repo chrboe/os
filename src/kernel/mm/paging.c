@@ -3,7 +3,7 @@
 extern const void kernel_start;
 extern const void kernel_end;
 
-struct vmm_context *kernel_context;
+struct vmm_context *active_context;
 static struct vmm_context tmp_kernel_context;
 
 static void blank_directory(uint32_t *pagedir)
@@ -59,15 +59,15 @@ static uint32_t get_pt_entry(uint32_t *page_directory, uintptr_t minimum, uintpt
         physaddr_t page_table_phys = clear_flags(page_directory[pd_index]);
 
         /* just remap the address real quick. may seem dirty, but it's the easiest thing to do */
-        uint32_t *page_table = vmm_find_free_area(kernel_context, minimum, maximum, 1);
-        vmm_map_page(kernel_context, page_table, page_table_phys);
+        uint32_t *page_table = vmm_find_free_area(active_context, minimum, maximum, 1);
+        vmm_map_page(active_context, page_table, page_table_phys);
 
         uint32_t result = 0;
         if (page_table[pt_index] & PAGE_PRESENT) {
             result = page_table[pt_index];
         }
 
-        vmm_unmap_page(kernel_context, page_table);
+        vmm_unmap_page(active_context, page_table);
 
         return result;
     } else {
@@ -82,7 +82,7 @@ physaddr_t vmm_uresolve(struct vmm_context *context, virtaddr_t addr)
 
 physaddr_t vmm_kresolve(virtaddr_t addr)
 {
-    return vmm_resolve(kernel_context, 0xC0000000, 0xFFFFFFFF, addr);
+    return vmm_resolve(active_context, 0xC0000000, 0xFFFFFFFF, addr);
 }
 
 physaddr_t vmm_resolve(struct vmm_context *context, uintptr_t minimum, uintptr_t maximum, virtaddr_t addr)
@@ -200,15 +200,15 @@ void* vmm_alloc(struct vmm_context *context, uint32_t size)
 void* vmm_kalloc_pages(uint32_t num_pages)
 {
     uart_printf("allocating %x pages (kernel)\r\n", num_pages);
-    uart_printf("kernel context: %x\r\n", kernel_context);
-    virtaddr_t virt = vmm_find_free_area(kernel_context, 0xC0000000, 0xFFFFFFFF, num_pages);
+    uart_printf("active context: %x\r\n", active_context);
+    virtaddr_t virt = vmm_find_free_area(active_context, 0xC0000000, 0xFFFFFFFF, num_pages);
     uart_printf("found free area at %x\r\n", virt);
 
     if(virt == 0) {
         return 0;
     }
 
-    vmm_map_consecutive(kernel_context, virt, num_pages);
+    vmm_map_consecutive(active_context, virt, num_pages);
 
     return virt;
 }
@@ -248,23 +248,23 @@ uint32_t vmm_map_page(struct vmm_context *context, virtaddr_t virt, uintptr_t ph
     virtaddr_t page_table_virt;
     virtaddr_t tmp;
 
-    uart_printf("kernel_context = %x, context = %x\r\n", kernel_context, context);
-    if (context == kernel_context || context == &tmp_kernel_context) {
+    uart_printf("active_context = %x, context = %x\r\n", active_context, context);
+    if (context == active_context || context == &tmp_kernel_context) {
         page_table_virt = (uint32_t*)(0xC0000000 + clear_flags(page_table));
     } else {
         /* we have to temporarily map it into the kernel space */
         uart_printf("temporarily mapping...\r\n");
-        tmp = vmm_find_free_area(kernel_context, 0xC0000000, 0xFFFFFFFF, 1);
+        tmp = vmm_find_free_area(active_context, 0xC0000000, 0xFFFFFFFF, 1);
         uart_printf("... to %x\r\n", tmp);
-        vmm_map_page(kernel_context, tmp, clear_flags(page_table));
+        vmm_map_page(active_context, tmp, clear_flags(page_table));
     }
 
     uart_printf("page_table_virt = %x\r\n", page_table_virt);
 
     table_put(page_table_virt, pt_index, phys, PAGE_PRESENT | PAGE_WRITE);
 
-    if (context != kernel_context) {
-        vmm_unmap_page(kernel_context, tmp);
+    if (context != active_context) {
+        vmm_unmap_page(active_context, tmp);
     }
     uart_puts("after table_put\r\n");
     /* invalidate tlb cache */
@@ -288,16 +288,16 @@ uint32_t vmm_init(uint32_t *kernel_pagedir)
     uart_printf("kernel_pagedir = %x\r\n", kernel_pagedir);
 
 
-    kernel_context = vmm_find_free_area(&tmp_kernel_context, 0xC0000000, 0xFFFFFFFF, 1);
+    active_context = vmm_find_free_area(&tmp_kernel_context, 0xC0000000, 0xFFFFFFFF, 1);
 
-    if(kernel_context == 0) {
+    if(active_context == 0) {
         panic("no more space at vmm init");
     }
 
-    kernel_context = vmm_map_consecutive(&tmp_kernel_context, kernel_context, 1);
+    active_context = vmm_map_consecutive(&tmp_kernel_context, active_context, 1);
 
-    uart_printf("kernel_context = %x\r\n", kernel_context);
-    kernel_context->page_directory = kernel_pagedir;
+    uart_printf("active_context = %x\r\n", active_context);
+    active_context->page_directory = kernel_pagedir;
 
     return ERR_OK;
 }

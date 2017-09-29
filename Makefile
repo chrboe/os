@@ -1,5 +1,4 @@
 export BUILD_DIRECTORY := $(abspath build)
-export OBJ_DIRECTORY := ${BUILD_DIRECTORY}/obj
 export TARGET := ${BUILD_DIRECTORY}/kernel
 CODE_DIRECOTRY := $(abspath src)
 
@@ -16,16 +15,12 @@ export COLOR_NO := \033[0m
 
 all: code
 
-${OBJ_DIRECTORY}: ${BUILD_DIRECTORY}
-	@echo "Creating object directory..."
-	mkdir -p ${OBJ_DIRECTORY}
-
 ${BUILD_DIRECTORY}:
 	@echo "Creating build directory..."
 	mkdir -p ${BUILD_DIRECTORY}
 
 .PHONY: code
-code:
+code: ${BUILD_DIRECTORY}
 	@${MAKE} -C ${CODE_DIRECOTRY}
 	@echo -e "${COLOR_SU}Build successful${COLOR_NO}"
 
@@ -35,4 +30,5 @@ todo:
 
 .PHONY: clean
 clean:
+	find . -type f -name "*.o" -delete
 	rm -rf ${BUILD_DIRECTORY}

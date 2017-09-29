@@ -1,18 +1,14 @@
 CSRCFILES := $(wildcard *.c)
 ASMSRCFILES := $(wildcard *.S)
-TARGET_DIR = ${OBJ_DIRECTORY}/kernel/i386/pc
-OBJFILES = $(filter %.o,$(CSRCFILES:%.c=${TARGET_DIR}/%.o) $(ASMSRCFILES:%.S=${TARGET_DIR}/%.o))
+OBJFILES = $(filter %.o,$(CSRCFILES:%.c=%.o) $(ASMSRCFILES:%.S=%.o))
 
 all: ${OBJFILES}
 
 
-${TARGET_DIR}/%.o: %.c ${TARGET_DIR}
+%.o: %.c
 	@echo -e "${COLOR_CC}CC\t$<${COLOR_NO}"
 	${CC} -c ${CFLAGS} -o $@ $<
 
-${TARGET_DIR}/%.o: %.S ${TARGET_DIR}
+%.o: %.S
 	@echo -e "${COLOR_AS}AS\t$<${COLOR_NO}"
 	@${CC} -c ${CFLAGS} -o $@ $<
-
-${TARGET_DIR}:
-	mkdir -p ${TARGET_DIR}

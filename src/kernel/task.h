@@ -12,7 +12,7 @@ struct task {
 	struct vmm_context *context;
 };
 
-extern struct vmm_context *kernel_context;
+extern struct vmm_context *active_context;
 
 struct stackframe* schedule(struct stackframe* frame);
 void init_multitasking();
