@@ -1,14 +1,18 @@
-.section text
-.global arch_do_context_switch
-.type arch_do_context_switch, @function
+        .text
+        .global arch_do_context_switch
+        .type arch_do_context_switch, @function
+
+# void arch_do_context_switch(uint32_t esp, uint32_t pagedir, uint32_t *old_esp);
+
 arch_do_context_switch:
 	pusha                         # Save caller state
-	mov    %esp         , %ebp    # Set base pointer
-	mov    0x24(%ebp)   , %eax    # eax=param0
-	mov    0x28(%ebp)   , %ecx    # ecx=param1
-	mov    0x2C(%ebp)   , %edx    # edx=param2
-	mov    %esp         , (%edx)  # *param2 = esp
-	mov    %eax         , %esp    # esp = param0
-	mov    %ecx         , %cr3    # cr3 = param1
+	movl    %esp         , %ebp    # Set base pointer
+	movl    0x20(%ebp)      , %eax    # eax=param0
+	movl    0x28(%ebp)      , %ecx    # ecx=param1
+	movl    0x30(%ebp)     , %edx    # edx=param2
+        a: jmp a
+	movl    %esp         , (%edx)  # *param2 = esp
+	movl    %eax         , %esp    # esp = param0
+	movl    %ecx         , %cr3    # cr3 = param1
 	popa                          # Restore caller state
 	ret                           # Return

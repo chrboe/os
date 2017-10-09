@@ -100,11 +100,12 @@ void init_multitasking()
     init_task(task_b);
     init_task(task_c);
     init_task(task_d);
+    current_task = first_task;
     uart_printf("TASK INIT DONE");
     asm("sti");
 }
 
-void arch_do_context_switch(uint32_t esp, uint32_t pagedir, uint32_t *old_esp);
+extern void arch_do_context_switch(uint32_t esp, uint32_t pagedir, uint32_t *old_esp);
 
 static void switch_task(struct task *const new_task)
 {
@@ -126,27 +127,26 @@ static void switch_task(struct task *const new_task)
     uart_printf("done!\r\n");
     current_task = new_task;
 
+    uart_printf("new_frame: %x\r\npagedir_phys: %x\r\n&curr_frame: %x\r\n", new_frame,
+            pagedir_phys, &curr_frame);
+
+    uart_printf("do context switch...");
     arch_do_context_switch(new_frame->esp, pagedir_phys, &curr_frame->esp);
+    uart_printf("done!\r\n");
     asm("sti");
 }
 
 static struct task *choose_next_task()
 {
     struct task *next_task;
-    if (current_task == 0) {
-        uart_printf("this is the first scheduler call\r\n");
-        /* we are just starting out */
-        next_task = first_task;
-    } else {
-        uart_printf("using next task (%x) %s\r\n", current_task->next,
-                current_task->next == first_task ? "(== first)" : "");
+    uart_printf("using next task (%x) %s\r\n", current_task->next,
+            current_task->next == first_task ? "(== first)" : "");
 
-        next_task = current_task->next;
-        if(current_task == 0) {
-            uart_printf("this was the last entry\r\n");
-            /* this was the last entry */
-            next_task = first_task;
-        }
+    next_task = current_task->next;
+    if(current_task == 0) {
+        uart_printf("this was the last entry\r\n");
+        /* this was the last entry */
+        next_task = first_task;
     }
 
     uart_printf("chose %x\r\n", next_task);
@@ -166,10 +166,8 @@ struct stackframe* schedule(struct stackframe* frame)
         return frame;
     }
 
-    if (current_task != 0) {
-        /* save the stackframe */
-        current_task->frame = frame;
-    }
+    /* save the stackframe */
+    current_task->frame = frame;
 
     /* choose next task */
     struct task *next_task = choose_next_task();

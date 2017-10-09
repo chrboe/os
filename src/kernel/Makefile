@@ -18,18 +18,18 @@ WARNINGS := -Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align \
             -Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
             -Wuninitialized -Wconversion -Wstrict-prototypes
 
-export CFLAGS = -I${INCLUDES} -fno-stack-protector -ffreestanding -g #${WARNINGS}
+export CFLAGS = -I${INCLUDES} -fno-stack-protector -ffreestanding -g #${WARNINGS
 
 # link flags
 export LDFLAGS = -nostdlib -lgcc
 
 all: ${SUBDIRS} ${OBJFILES}
 	@echo -e "${COLOR_LD}LD\t${TARGET}${COLOR_NO}"
-	@${LD} ${LDFLAGS} ${LD_OBJS} -T ${LD_SCRIPT} -o ${TARGET}
+	${LD} ${LDFLAGS} ${LD_OBJS} -T ${LD_SCRIPT} -o ${TARGET}
 
 %.o: %.c
 	@echo -e "${COLOR_CC}CC\t$<${COLOR_NO}"
-	@${CC} -c ${CFLAGS} -o $@ $<
+	${CC} -c ${CFLAGS} -o $@ $<
 
 .PHONY: ${SUBDIRS}
 ${SUBDIRS}:

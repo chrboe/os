@@ -11,4 +11,4 @@ all: ${OBJFILES}
 
 %.o: %.S
 	@echo -e "${COLOR_AS}AS\t$<${COLOR_NO}"
-	@${CC} -c ${CFLAGS} -o $@ $<
+	i686-elf-as -c -o $@ $<
