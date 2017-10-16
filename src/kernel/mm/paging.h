@@ -52,10 +52,7 @@ void  vmm_free(virtaddr_t addr);
 uint32_t vmm_map_page(struct vmm_context *context, virtaddr_t virt,
         physaddr_t phys);
 uint32_t vmm_init(uint32_t *kernel_pagedir);
-physaddr_t vmm_uresolve(struct vmm_context *context, virtaddr_t addr);
-physaddr_t vmm_kresolve(virtaddr_t addr);
-physaddr_t vmm_resolve(struct vmm_context *context, uintptr_t minimum,
-        uintptr_t maximum, virtaddr_t addr);
+physaddr_t vmm_resolve(virtaddr_t addr);
 void* vmm_find_free_area(struct vmm_context *context, uintptr_t minimum,
         uintptr_t maximum, uint32_t num_pages);
 

@@ -32,13 +32,13 @@ struct vmm_context *vmm_create_context()
     uart_printf("after blank\r\n");
 
     /* map the last page to the page directory itself */
-    context->page_directory[1023] = (uint32_t)context->page_directory;
+    context->page_directory[1023] = vmm_resolve(context->page_directory);
     uart_printf("after id map\r\n");
 
     /* map the kernel address space to the context */
-    for(physaddr_t i = &kernel_start; i < &kernel_end; i += 4096) {
+    for(virtaddr_t i = (virtaddr_t)&kernel_start; i < &kernel_end; i += 4096) {
         uart_printf("%x\r\n", i);
-        vmm_map_page(context, i, i - 0xC0000000);
+        vmm_map_page(context, i, (physaddr_t)i - 0xC0000000);
     }
 
     return context;
@@ -49,59 +49,52 @@ static void vmm_unmap_page(struct vmm_context *context, virtaddr_t addr)
     /* TODO */
 }
 
-static uint32_t get_pt_entry(uint32_t *page_directory, uintptr_t minimum,
-        uintptr_t maximum, virtaddr_t addr)
+static physaddr_t get_page_directory_entry(physaddr_t page_directory, virtaddr_t addr)
 {
-    uint32_t page_number = (uint32_t)addr / 4096;
-    uint32_t pd_index = page_number / 1024;
-    uint32_t pt_index = page_number % 1024;
+    uint32_t bits_from_cr3 = page_directory & 0xFFFFF000;
+    uint32_t bits_from_addr = ((uint32_t)addr & 0xFFC00000) >> 20;
+    return bits_from_cr3 | bits_from_addr;
+}
 
-    if (page_directory[pd_index] & PAGE_PRESENT) {
-        physaddr_t page_table_phys = clear_flags(page_directory[pd_index]);
+static physaddr_t get_page_table_entry(physaddr_t pde, virtaddr_t addr)
+{
+    uint32_t bits_from_pde = pde & 0xFFFFF000;
+    uint32_t bits_from_addr = ((uint32_t)addr & 0x003FF000) >> 10;
 
-        /*
-         * just remap the address real quick. may seem dirty,
-         * but it's the easiest thing to do
-         */
-        uint32_t *page_table = vmm_find_free_area(active_context,
-                minimum, maximum, 1);
+    uart_printf("addr bits: \t0x%x\r\n", (uint32_t)addr & 0x003FF000);
 
-        vmm_map_page(active_context, page_table, page_table_phys);
+    return bits_from_pde | bits_from_addr;
+}
 
-        uint32_t result = 0;
-        if (page_table[pt_index] & PAGE_PRESENT) {
-            result = page_table[pt_index];
-        }
+physaddr_t vmm_resolve(virtaddr_t addr)
+{
+    uart_printf("vmm_resolve: \t0x%x\r\n", addr);
+    uart_printf("current pd: \t0x%x\r\n", active_context->page_directory);
 
-        vmm_unmap_page(active_context, page_table);
+    physaddr_t page_directory_phys = active_context->page_directory[1023];
+    int i;
+    asm("\t movl %%cr3,%0" : "=r"(i));
+    uart_printf("cr3: \t\t0x%x\r\n", i);
+    uart_printf("pd phys: \t0x%x\r\n", page_directory_phys);
 
-        return result;
-    } else {
+    physaddr_t pde = get_page_directory_entry(page_directory_phys, addr);
+    uart_printf("pde: \t\t0x%x\r\n", pde);
+
+    physaddr_t pte = get_page_table_entry(pde, addr);
+    uart_printf("pte: \t\t0x%x\r\n", pte);
+
+    /*if (!(pte & PAGE_PRESENT)) {
+        uart_printf("pte is NOT present\r\n");
         return 0;
-    }
-}
+    }*/
 
-physaddr_t vmm_uresolve(struct vmm_context *context, virtaddr_t addr)
-{
-    return vmm_resolve(context, 0x00000000, 0xBFFFFFFF, addr);
-}
+    uint32_t bits_from_pte = pte & 0xFFFFF000;
+    uint32_t bits_from_addr = (uint32_t)addr & 0x3FF;
 
-physaddr_t vmm_kresolve(virtaddr_t addr)
-{
-    return vmm_resolve(active_context, 0xC0000000, 0xFFFFFFFF, addr);
-}
+    uart_printf("pte bits: \t0x%x\r\n", bits_from_pte);
+    uart_printf("addr bits: \t0x%x\r\n", bits_from_addr);
 
-physaddr_t vmm_resolve(struct vmm_context *context, uintptr_t minimum,
-        uintptr_t maximum, virtaddr_t addr)
-{
-    uint32_t pte = get_pt_entry(context->page_directory,
-            minimum, maximum, addr);
-
-    if (pte & PAGE_PRESENT) {
-        return clear_flags(pte) | ((uint32_t)addr & 0xFFF);
-    } else {
-        return 0;
-    }
+    return bits_from_pte | bits_from_addr;
 }
 
 virtaddr_t vmm_map_consecutive(struct vmm_context *context, virtaddr_t start,
@@ -330,6 +323,8 @@ uint32_t vmm_init(uint32_t *kernel_pagedir)
 
     uart_printf("active_context = %x\r\n", active_context);
     active_context->page_directory = kernel_pagedir;
+    active_context->page_directory[1023] = (uint32_t)kernel_pagedir - 0xC0000000;
 
+    uart_printf("asdf 0x%x - 0x%x = 0x%x\r\n", kernel_pagedir, 0xC0000000, (uint32_t)kernel_pagedir - 0xC0000000);
     return ERR_OK;
 }

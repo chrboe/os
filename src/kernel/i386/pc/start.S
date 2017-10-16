@@ -22,11 +22,11 @@ stack_top:
 # are available, as the bootloader might have loaded its multiboot structures or
 # modules there. This lets the bootloader know it must avoid the addresses.
 .section .bss, "aw", @nobits
-	.align 4096
+        .align 4096
 kernel_pagedir:
-	.skip 4096
+        .skip 4096
 boot_pagetable1:
-	.skip 4096
+        .skip 4096
 # Further page tables may be required if the kernel grows beyond 3 MiB.
 
 
@@ -35,85 +35,85 @@ boot_pagetable1:
 .global _start
 .type _start, @function
 _start:
-	# Physical address of boot_pagetab1.
-	movl $(boot_pagetable1 - 0xC0000000), %edi
-	# First address to map is address 0.
-	movl $0, %esi
-	# Map 1023 pages. The 1024th will be the VGA text buffer.
-	movl $1023, %ecx
+        # Physical address of boot_pagetab1.
+        movl $(boot_pagetable1 - 0xC0000000), %edi
+        # First address to map is address 0.
+        movl $0, %esi
+        # Map 1023 pages. The 1024th will be the VGA text buffer.
+        movl $1023, %ecx
 
 1:
-	cmpl $0, %esi
-	jl 2f
-	cmpl $(kernel_end - 0xC0000000), %esi
-	jge 3f
+        cmpl $0, %esi
+        jl 2f
+        cmpl $(kernel_end - 0xC0000000), %esi
+        jge 3f
 
-	# Map physical address as "present, writable". Note that this maps
-	# .text and .rodata as writable. Mind security and map them as non-writable.
-	movl %esi, %edx
-	orl $0x003, %edx
-	movl %edx, (%edi)
+        # Map physical address as "present, writable". Note that this maps
+        # .text and .rodata as writable. Mind security and map them as non-writable.
+        movl %esi, %edx
+        orl $0x003, %edx
+        movl %edx, (%edi)
 
 2:
-	# Size of page is 4096 bytes.
-	addl $4096, %esi
-	# Size of entries in boot_pagetab1 is 4 bytes.
-	addl $4, %edi
-	# Loop to the next entry if we haven't finished.
-	loop 1b
+        # Size of page is 4096 bytes.
+        addl $4096, %esi
+        # Size of entries in boot_pagetab1 is 4 bytes.
+        addl $4, %edi
+        # Loop to the next entry if we haven't finished.
+        loop 1b
 
 3:
-	# Map VGA video memory to 0xC03FF000 as "present, writable".
-	movl $(0x000B8000 | 0x003), boot_pagetable1 - 0xC0000000 + 1023 * 4
+        # Map VGA video memory to 0xC03FF000 as "present, writable".
+        movl $(0x000B8000 | 0x003), boot_pagetable1 - 0xC0000000 + 1023 * 4
 
 
-	# The page table is used at both page directory entry 0 (virtually from 0x0
-	# to 0x3FFFFF) (thus identity mapping the kernel) and page directory entry
-	# 768 (virtually from 0xC0000000 to 0xC03FFFFF) (thus mapping it in the
-	# higher half). The kernel is identity mapped because enabling paging does
-	# not change the next instruction, which continues to be physical. The CPU
-	# would instead page fault if there was no identity mapping.
+        # The page table is used at both page directory entry 0 (virtually from 0x0
+        # to 0x3FFFFF) (thus identity mapping the kernel) and page directory entry
+        # 768 (virtually from 0xC0000000 to 0xC03FFFFF) (thus mapping it in the
+        # higher half). The kernel is identity mapped because enabling paging does
+        # not change the next instruction, which continues to be physical. The CPU
+        # would instead page fault if there was no identity mapping.
 
-	# Map the page table to both virtual addresses 0x00000000 and 0xC0000000.
-	movl $(boot_pagetable1 - 0xC0000000 + 0x003), kernel_pagedir - 0xC0000000 + 0
-	movl $(boot_pagetable1 - 0xC0000000 + 0x003), kernel_pagedir - 0xC0000000 + 768 * 4
+        # Map the page table to both virtual addresses 0x00000000 and 0xC0000000.
+        movl $(boot_pagetable1 - 0xC0000000 + 0x003), kernel_pagedir - 0xC0000000 + 0
+        movl $(boot_pagetable1 - 0xC0000000 + 0x003), kernel_pagedir - 0xC0000000 + 768 * 4
 
-	# Set cr3 to the address of the boot_page_directory.
-	movl $(kernel_pagedir - 0xC0000000), %ecx
-	movl %ecx, %cr3
+        # Set cr3 to the address of the boot_page_directory.
+        movl $(kernel_pagedir - 0xC0000000), %ecx
+        movl %ecx, %cr3
 
 
-	# Enable paging and the write-protect bit.
-	movl %cr0, %ecx
-	orl $0x80010000, %ecx
-	movl %ecx, %cr0
+        # Enable paging and the write-protect bit.
+        movl %cr0, %ecx
+        orl $0x80010000, %ecx
+        movl %ecx, %cr0
 
-	# Jump to higher half with an absolute jump.
-	lea 4f, %ecx
-	jmp *%ecx
+        # Jump to higher half with an absolute jump.
+        lea 4f, %ecx
+        jmp *%ecx
 
 4:
-	# At this point, paging is fully set up and enabled.
+        # At this point, paging is fully set up and enabled.
 
-	# Unmap the identity mapping as it is now unnecessary.
-	movl $0, kernel_pagedir + 0
+        # Unmap the identity mapping as it is now unnecessary.
+        movl $0, kernel_pagedir + 0
 
-	# Reload crc3 to force a TLB flush so the changes to take effect.
-	movl %cr3, %ecx
-	movl %ecx, %cr3
+        # Reload crc3 to force a TLB flush so the changes to take effect.
+        movl %cr3, %ecx
+        movl %ecx, %cr3
 
-	# Set up the stack.
-	mov $stack_top, %esp
+        # Set up the stack.
+        mov $stack_top, %esp
 
     push $kernel_pagedir
 
     add $0xC0000000, %ebx
     push %ebx
 
-	# Enter the high-level kernel.
-	call init
+        # Enter the high-level kernel.
+        call init
 
-	# Infinite loop if the system has nothing more to do.
-	cli
-1:	hlt
-	jmp 1b
+        # Infinite loop if the system has nothing more to do.
+        cli
+1:      hlt
+        jmp 1b

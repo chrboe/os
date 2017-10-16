@@ -113,7 +113,12 @@ static void switch_task(struct task *const new_task)
     uart_printf("context switch\r\n");
     uart_printf("new context = %x\r\n", new_task->context);
     uart_printf("new pagedir = %x\r\n", new_task->context->page_directory);
-    physaddr_t pagedir_phys = vmm_kresolve(new_task->context->page_directory);
+
+    uart_printf("setting kernel context to %x...", new_task->context);
+    active_context = new_task->context;
+    uart_printf("done!\r\n");
+
+    physaddr_t pagedir_phys = vmm_resolve(new_task->context->page_directory);
     uart_printf("new pagedir_phys = %x\r\n", pagedir_phys);
     uart_printf("saving frames\r\n");
 
@@ -122,10 +127,7 @@ static void switch_task(struct task *const new_task)
     struct stackframe *new_frame = new_task->frame;
     uart_printf("saved new frame\r\n");
 
-    uart_printf("setting kernel context to %x...", new_task->context);
-    active_context = new_task->context;
-    uart_printf("done!\r\n");
-    current_task = new_task;
+        current_task = new_task;
 
     uart_printf("new_frame: %x\r\npagedir_phys: %x\r\n&curr_frame: %x\r\n", new_frame,
             pagedir_phys, &curr_frame);

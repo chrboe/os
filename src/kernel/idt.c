@@ -180,7 +180,17 @@ static void handle_page_fault(struct stackframe *frame)
         "User process tried to write a page and caused a protection fault"
     };
 
-    kprintf(COL_NOR, "%s\r\n", errors[frame->error & 0x7]);
+    kprintf(COL_NOR, "%s\r\n\r\n", errors[frame->error & 0x7]);
+    kprintf(COL_ERR, "Offending address:\r\n");
+
+    int cr2;
+    asm("\t movl %%cr2,%0" : "=r"(cr2));
+    kprintf(COL_NOR, "0x%x\r\n\r\n", cr2);
+
+    uart_printf("offending address: 0x%x\r\n", cr2);
+
+    kprintf(COL_ERR, "Registers:\r\n");
+    dump_frame(frame);
     abort();
 }
 

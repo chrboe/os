@@ -7,9 +7,9 @@
 #include "mm/paging.h"
 
 struct task {
-	struct stackframe *frame;
-	struct task *next;
-	struct vmm_context *context;
+    struct stackframe *frame;
+    struct task *next;
+    struct vmm_context *context;
 };
 
 extern struct vmm_context *active_context;
