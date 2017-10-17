@@ -105,7 +105,7 @@ void init_multitasking()
     asm("sti");
 }
 
-extern void arch_do_context_switch(uint32_t esp, uint32_t pagedir, uint32_t *old_esp);
+extern void arch_do_context_switch(uint32_t esp, uint32_t *old_esp);
 
 static void switch_task(struct task *const new_task)
 {
@@ -127,13 +127,10 @@ static void switch_task(struct task *const new_task)
     struct stackframe *new_frame = new_task->frame;
     uart_printf("saved new frame\r\n");
 
-        current_task = new_task;
-
-    uart_printf("new_frame: %x\r\npagedir_phys: %x\r\n&curr_frame: %x\r\n", new_frame,
-            pagedir_phys, &curr_frame);
+    current_task = new_task;
 
     uart_printf("do context switch...");
-    arch_do_context_switch(new_frame->esp, pagedir_phys, &curr_frame->esp);
+    arch_do_context_switch(new_frame->esp, &curr_frame->esp);
     uart_printf("done!\r\n");
     asm("sti");
 }

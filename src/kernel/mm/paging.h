@@ -56,4 +56,6 @@ physaddr_t vmm_resolve(virtaddr_t addr);
 void* vmm_find_free_area(struct vmm_context *context, uintptr_t minimum,
         uintptr_t maximum, uint32_t num_pages);
 
+void vmm_switch_context(struct vmm_context *context);
+
 #endif // PAGING_H

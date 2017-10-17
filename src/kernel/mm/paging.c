@@ -304,6 +304,19 @@ void vmm_free(virtaddr_t addr)
     /* TODO */
 }
 
+uint32_t force_order;
+
+void vmm_switch_context(struct vmm_context *new_context)
+{
+    if (active_context == new_context) {
+        return;
+    }
+
+    active_context = new_context;
+    physaddr_t pagedir_phys = vmm_kresolve(new_context->page_directory);
+    asm volatile("mov %0,%%cr3": : "r" (pagedir_phys), "m" (force_order));
+}
+
 uint32_t vmm_init(uint32_t *kernel_pagedir)
 {
     /* bootstrap kernel context */
